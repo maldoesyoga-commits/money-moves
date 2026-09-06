@@ -83,6 +83,16 @@ export function DebtsIcon({ className }) {
   )
 }
 
+export function ImportIcon({ className }) {
+  return (
+    <Icon className={className}>
+      <path d="M12 15V4" />
+      <polyline points="7.5 8.5 12 4 16.5 8.5" />
+      <path d="M4.5 20h15" />
+    </Icon>
+  )
+}
+
 export function MoreIcon({ className }) {
   return (
     <Icon className={className}>

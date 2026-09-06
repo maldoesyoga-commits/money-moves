@@ -608,6 +608,129 @@ h4 {
   color: var(--clay);
 }
 
+.import-page h1 {
+  margin-bottom: 4px;
+}
+
+textarea {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  outline: none;
+  resize: vertical;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+textarea::placeholder {
+  color: var(--text-soft);
+}
+
+textarea:focus {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px var(--sage-soft);
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.review-table th {
+  text-align: left;
+  color: var(--text-soft);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.review-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.review-table tr:last-child td {
+  border-bottom: none;
+}
+
+.review-table tr.row-excluded {
+  opacity: 0.5;
+}
+
+.review-table input[type='text'],
+.review-table input[type='date'],
+.review-table input[type='number'],
+.review-table select {
+  font-size: 13px;
+  padding: 6px 8px;
+  min-width: 110px;
+}
+
+.review-table td:nth-child(3) input {
+  min-width: 200px;
+}
+
+.review-table input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--sage);
+  cursor: pointer;
+}
+
+.direction-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.direction-btn {
+  border: none;
+  background: transparent;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  border-radius: 0;
+}
+
+.direction-btn.direction-out.active {
+  background: var(--clay-soft);
+  color: var(--clay);
+}
+
+.direction-btn.direction-in.active {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.import-save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 .error-text {
   color: var(--clay);
   font-size: 14px;

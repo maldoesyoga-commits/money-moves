@@ -7,6 +7,7 @@ import {
   IncomeIcon,
   SavingsIcon,
   DebtsIcon,
+  ImportIcon,
   MoreIcon,
 } from './icons'
 
@@ -18,6 +19,7 @@ const TABS = [
   { to: '/income', label: 'Income', Icon: IncomeIcon },
   { to: '/savings', label: 'Savings', Icon: SavingsIcon },
   { to: '/debts', label: 'Debts', Icon: DebtsIcon },
+  { to: '/import', label: 'Import', Icon: ImportIcon },
   { to: '/more', label: 'More', Icon: MoreIcon },
 ]
 

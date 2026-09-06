@@ -8,6 +8,7 @@ import Accounts from './Accounts'
 import Savings from './Savings'
 import Debts from './Debts'
 import Transactions from './Transactions'
+import Import from './Import'
 import More from './More'
 import BottomNav from './BottomNav'
 
@@ -177,6 +178,7 @@ function App() {
         <Route path="/income" element={<Income />} />
         <Route path="/savings" element={<Savings />} />
         <Route path="/debts" element={<Debts />} />
+        <Route path="/import" element={<Import />} />
         <Route path="/more" element={<More />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
