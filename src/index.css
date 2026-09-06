@@ -636,6 +636,11 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--sage-soft);
 }
 
+.pipe-textarea {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+}
+
 .table-scroll {
   overflow-x: auto;
   margin-top: 16px;

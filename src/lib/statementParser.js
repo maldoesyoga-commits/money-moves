@@ -125,3 +125,38 @@ export function parseStatementText(text) {
     .map((line) => parseLine(line))
     .filter(Boolean)
 }
+
+function parsePipeRow(line) {
+  const parts = line.split('|').map((part) => part.trim())
+  if (parts.length < 4) return null
+
+  const [dateStr, amountStr, directionStr, ...descriptionParts] = parts
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null
+
+  const amount = Number(amountStr)
+  if (Number.isNaN(amount) || amount <= 0) return null
+
+  const direction = directionStr.toLowerCase()
+  if (direction !== 'in' && direction !== 'out') return null
+
+  const description = descriptionParts.join('|').trim()
+
+  return {
+    txn_date: dateStr,
+    amount,
+    direction,
+    description: description || 'Imported transaction',
+  }
+}
+
+export function parsePipeRows(text) {
+  if (!text) return []
+
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#'))
+    .map((line) => parsePipeRow(line))
+    .filter(Boolean)
+}

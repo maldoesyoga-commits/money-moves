@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
-import { parseStatementText } from './lib/statementParser'
+import { parseStatementText, parsePipeRows } from './lib/statementParser'
 import { extractPdfText } from './lib/pdfText'
 
 function buildRows(candidates) {
@@ -11,7 +11,7 @@ function buildRows(candidates) {
     description: candidate.description,
     amount: candidate.amount.toFixed(2),
     category_id: '',
-    direction: 'out',
+    direction: candidate.direction || 'out',
     included: true,
   }))
 }
@@ -20,6 +20,7 @@ function Import() {
   const [categories, setCategories] = useState([])
   const [rows, setRows] = useState([])
   const [pasteText, setPasteText] = useState('')
+  const [pipeText, setPipeText] = useState('')
   const [attempted, setAttempted] = useState(false)
   const [loadingPdf, setLoadingPdf] = useState(false)
   const [fileError, setFileError] = useState(null)
@@ -70,6 +71,15 @@ function Import() {
     e.preventDefault()
 
     const candidates = parseStatementText(pasteText)
+    setRows(buildRows(candidates))
+    setAttempted(true)
+    setSavedCount(null)
+  }
+
+  function handlePipeSubmit(e) {
+    e.preventDefault()
+
+    const candidates = parsePipeRows(pipeText)
     setRows(buildRows(candidates))
     setAttempted(true)
     setSavedCount(null)
@@ -142,6 +152,24 @@ function Import() {
             placeholder={'01/15/2026  Grocery Store  -45.99'}
           />
           <button type="submit">Parse text</button>
+        </form>
+      </div>
+
+      <div className="card">
+        <h2>Paste rows</h2>
+        <p className="list-row-sub">
+          One transaction per line: date | amount | in/out | description. Blank lines and lines
+          starting with # are ignored.
+        </p>
+        <form onSubmit={handlePipeSubmit}>
+          <textarea
+            className="pipe-textarea"
+            value={pipeText}
+            onChange={(e) => setPipeText(e.target.value)}
+            rows={6}
+            placeholder={'2026-09-05 | 45.99 | out | Grocery Store'}
+          />
+          <button type="submit">Parse rows</button>
         </form>
       </div>
 
