@@ -731,6 +731,15 @@ textarea:focus {
   border-top: 1px solid var(--border);
 }
 
+.transaction-row {
+  align-items: flex-start;
+}
+
+.transaction-edit-form {
+  width: 100%;
+  gap: 8px;
+}
+
 .error-text {
   color: var(--clay);
   font-size: 14px;
