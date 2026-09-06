@@ -332,11 +332,6 @@ function Transactions() {
     loadTransactions()
   }
 
-  function categoryName(categoryId) {
-    const category = categories.find((c) => c.id === categoryId)
-    return category ? category.name : ''
-  }
-
   function accountName(accountId) {
     const account = accounts.find((a) => a.id === accountId)
     return account ? account.name : ''
@@ -511,7 +506,7 @@ function Transactions() {
             ) : (
               <div className="transaction-row-body">
                 <div className="list-row-main">
-                  <span className="list-row-title">{categoryName(txn.category_id) || '— category —'}</span>
+                  <span className="list-row-title">{txn.note || 'No description'}</span>
                   <span className="list-row-sub">
                     {txn.txn_date} · {directionLabel(txn.direction)}
                     {accountFlowLabel(txn) ? ` · ${accountFlowLabel(txn)}` : ''}
