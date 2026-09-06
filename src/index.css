@@ -803,6 +803,37 @@ textarea:focus {
   cursor: pointer;
 }
 
+.category-group-block {
+  margin-top: 20px;
+}
+
+.category-group-block h3 {
+  margin-top: 0;
+}
+
+.row-action-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.row-action-btn:hover {
+  color: var(--sage);
+  border-color: var(--sage);
+  background: var(--sage-soft);
+}
+
+.row-action-btn-danger:hover {
+  color: var(--clay);
+  border-color: var(--clay);
+  background: var(--clay-soft);
+}
+
 .error-text {
   color: var(--clay);
   font-size: 14px;

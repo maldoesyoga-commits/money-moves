@@ -28,7 +28,10 @@ function Import() {
   const [savedCount, setSavedCount] = useState(null)
 
   async function loadCategories() {
-    const { data, error } = await supabase.from('categories').select('*')
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .or('archived.is.null,archived.eq.false')
 
     if (error) {
       console.error('Failed to load categories', error)
