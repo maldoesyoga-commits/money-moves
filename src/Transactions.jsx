@@ -77,6 +77,9 @@ function Transactions() {
   const [fromAccountId, setFromAccountId] = useState('')
   const [toAccountId, setToAccountId] = useState('')
 
+  const [onlyUncategorized, setOnlyUncategorized] = useState(false)
+  const [flashId, setFlashId] = useState(null)
+
   const [editingId, setEditingId] = useState(null)
   const [editDate, setEditDate] = useState('')
   const [editAmount, setEditAmount] = useState('')
@@ -186,6 +189,68 @@ function Transactions() {
     loadTransactions()
   }
 
+  function flashRow(id) {
+    setFlashId(id)
+    setTimeout(() => {
+      setFlashId((current) => (current === id ? null : current))
+    }, 900)
+  }
+
+  async function handleInlineCategoryChange(id, categoryId) {
+    const value = categoryId || null
+    const previous = transactions.find((t) => t.id === id)?.category_id ?? null
+
+    setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, category_id: value } : t)))
+
+    const { error } = await supabase.from('transactions').update({ category_id: value }).eq('id', id)
+
+    if (error) {
+      console.log(error.message)
+      setTransactions((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, category_id: previous } : t)),
+      )
+      return
+    }
+
+    flashRow(id)
+  }
+
+  async function handleInlineDirectionChange(id, newDirection) {
+    const { data: oldTxn, error: fetchError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) {
+      console.log(fetchError.message)
+      return
+    }
+
+    if (oldTxn.direction === newDirection) return
+
+    const newTxn = { ...oldTxn, direction: newDirection }
+
+    const deltaMap = mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1))
+    const balancesOk = await applyBalanceDeltas(deltaMap)
+    if (!balancesOk) return
+
+    const { error: updateError } = await supabase
+      .from('transactions')
+      .update({ direction: newDirection })
+      .eq('id', id)
+
+    if (updateError) {
+      console.log(updateError.message)
+      return
+    }
+
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, direction: newDirection } : t)),
+    )
+    flashRow(id)
+  }
+
   function startEdit(txn) {
     setEditingId(txn.id)
     setEditDate(txn.txn_date || '')
@@ -286,6 +351,11 @@ function Transactions() {
     return ''
   }
 
+  const uncategorizedCount = transactions.filter((txn) => !txn.category_id).length
+  const visibleTransactions = onlyUncategorized
+    ? transactions.filter((txn) => !txn.category_id)
+    : transactions
+
   return (
     <div className="card">
       <h2>Transactions</h2>
@@ -343,9 +413,27 @@ function Transactions() {
         </label>
         <button type="submit">Add</button>
       </form>
+
+      <div className="transaction-filter-bar">
+        <label className="filter-toggle">
+          <input
+            type="checkbox"
+            checked={onlyUncategorized}
+            onChange={(e) => setOnlyUncategorized(e.target.checked)}
+          />
+          Needs a category
+        </label>
+        {uncategorizedCount > 0 && (
+          <span className="list-row-sub">{uncategorizedCount} untagged</span>
+        )}
+      </div>
+
       <ul className="list">
-        {transactions.map((txn) => (
-          <li key={txn.id} className="list-row transaction-row">
+        {visibleTransactions.map((txn) => (
+          <li
+            key={txn.id}
+            className={`list-row transaction-row${flashId === txn.id ? ' row-flash-saved' : ''}`}
+          >
             {editingId === txn.id ? (
               <form className="transaction-edit-form" onSubmit={(e) => handleSaveEdit(e, txn.id)}>
                 <div className="field-row">
@@ -421,15 +509,44 @@ function Transactions() {
                 </div>
               </form>
             ) : (
-              <>
+              <div className="transaction-row-body">
                 <div className="list-row-main">
-                  <span className="list-row-title">{categoryName(txn.category_id)}</span>
+                  <span className="list-row-title">{categoryName(txn.category_id) || '— category —'}</span>
                   <span className="list-row-sub">
                     {txn.txn_date} · {directionLabel(txn.direction)}
                     {accountFlowLabel(txn) ? ` · ${accountFlowLabel(txn)}` : ''}
                   </span>
                 </div>
-                <div className="subscription-actions">
+                <div className="transaction-controls">
+                  <select
+                    className="inline-select"
+                    value={txn.category_id || ''}
+                    onChange={(e) => handleInlineCategoryChange(txn.id, e.target.value)}
+                    aria-label="Category"
+                  >
+                    <option value="">— category —</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="direction-toggle compact">
+                    <button
+                      type="button"
+                      className={`direction-btn direction-out${txn.direction === 'out' ? ' active' : ''}`}
+                      onClick={() => handleInlineDirectionChange(txn.id, 'out')}
+                    >
+                      Out
+                    </button>
+                    <button
+                      type="button"
+                      className={`direction-btn direction-in${txn.direction === 'in' ? ' active' : ''}`}
+                      onClick={() => handleInlineDirectionChange(txn.id, 'in')}
+                    >
+                      In
+                    </button>
+                  </div>
                   <span className="money">{formatMoney(txn.amount)}</span>
                   <button
                     type="button"
@@ -448,7 +565,7 @@ function Transactions() {
                     ×
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </li>
         ))}

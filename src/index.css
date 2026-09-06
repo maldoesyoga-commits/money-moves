@@ -738,11 +738,69 @@ textarea:focus {
 
 .transaction-row {
   align-items: flex-start;
+  transition: background-color 0.4s ease;
+}
+
+.transaction-row.row-flash-saved {
+  background-color: var(--sage-soft);
 }
 
 .transaction-edit-form {
   width: 100%;
   gap: 8px;
+}
+
+.transaction-row-body {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.transaction-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inline-select {
+  font-size: 13px;
+  padding: 6px 8px;
+  max-width: 150px;
+}
+
+.direction-toggle.compact .direction-btn {
+  padding: 3px 9px;
+  font-size: 11px;
+}
+
+.transaction-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.filter-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.filter-toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--sage);
+  cursor: pointer;
 }
 
 .error-text {
