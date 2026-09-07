@@ -1,27 +1,19 @@
 import { NavLink } from 'react-router-dom'
 import {
   HomeIcon,
-  InsightsIcon,
-  AccountsIcon,
   TransactionsIcon,
-  IncomeIcon,
+  InsightsIcon,
   SavingsIcon,
-  DebtsIcon,
-  ImportIcon,
-  ReceiptsIcon,
   MoreIcon,
 } from './icons'
 
+// Five tabs is the most that fits comfortably on a phone.
+// Everything else lives on the More page.
 const TABS = [
   { to: '/money', label: 'Home', Icon: HomeIcon, end: true },
-  { to: '/money/insights', label: 'Insights', Icon: InsightsIcon },
-  { to: '/money/accounts', label: 'Accounts', Icon: AccountsIcon },
   { to: '/money/transactions', label: 'Transactions', Icon: TransactionsIcon },
-  { to: '/money/income', label: 'Income', Icon: IncomeIcon },
+  { to: '/money/insights', label: 'Insights', Icon: InsightsIcon },
   { to: '/money/savings', label: 'Savings', Icon: SavingsIcon },
-  { to: '/money/debts', label: 'Debts', Icon: DebtsIcon },
-  { to: '/money/import', label: 'Import', Icon: ImportIcon },
-  { to: '/money/receipts', label: 'Receipts', Icon: ReceiptsIcon },
   { to: '/money/more', label: 'More', Icon: MoreIcon },
 ]
 

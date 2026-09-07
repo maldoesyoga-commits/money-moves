@@ -1627,3 +1627,60 @@ button.segmented-tab.active:hover {
 .search-module input[type='search'] {
   width: 100%;
 }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 11;
+  background: var(--bg);
+  padding: 10px 0;
+  margin-bottom: 22px;
+}
+
+.more-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.more-link:hover {
+  color: var(--sage);
+}
+
+.more-link .bottom-nav-icon {
+  flex-shrink: 0;
+  color: var(--sage);
+}
+
+.more-link .list-row-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.more-chevron {
+  color: var(--text-soft);
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+  .app-shell {
+    padding-top: 20px;
+  }
+
+  .bottom-nav {
+    overflow-x: visible;
+  }
+
+  .bottom-nav-tab {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
