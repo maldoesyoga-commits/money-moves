@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import TodayStrip from './TodayStrip'
 
 const MODULES = [
   {
@@ -66,6 +67,8 @@ function HomeHub() {
         <h1>Your hub</h1>
         <p className="list-row-sub">Pick a module to get started.</p>
       </div>
+
+      <TodayStrip />
 
       <div className="module-grid">
         {MODULES.map((mod) =>

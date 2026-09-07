@@ -1577,3 +1577,45 @@ button.segmented-tab.active:hover {
 .meals-module .learning-detail > input {
   width: 100%;
 }
+
+.today-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 24px;
+}
+
+.today-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.today-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(45, 50, 48, 0.1);
+}
+
+.today-chip-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sage);
+}
+
+.today-chip-label.urgent {
+  color: var(--terracotta-muted-text);
+}
+
+.today-chip-detail {
+  font-size: 12px;
+  color: var(--text-soft);
+}
