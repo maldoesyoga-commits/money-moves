@@ -3064,3 +3064,106 @@ button.segmented-tab.active:hover {
   margin: 0 0 14px;
   text-align: left;
 }
+
+/* ---------- Week planner ---------- */
+
+.week-header h2 .list-row-sub {
+  font-family: var(--font-sans);
+  font-weight: 400;
+}
+
+.budget-week-grid {
+  margin: 14px 0 12px;
+}
+
+.review-stat-value.over {
+  color: var(--terracotta-muted-text);
+}
+
+.week-grid-days {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.week-day {
+  margin-bottom: 0;
+  padding: 16px;
+}
+
+.week-day h3 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.week-day-today {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 2px var(--sage-soft);
+}
+
+.week-day-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.week-intention {
+  margin-top: 6px;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  color: var(--clay);
+}
+
+.week-list {
+  margin-top: 8px;
+}
+
+.week-list .list-row {
+  padding: 8px 0;
+}
+
+.week-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--text-soft);
+  vertical-align: middle;
+}
+
+.week-tag.priority {
+  background: var(--clay-soft);
+  color: var(--clay);
+}
+
+.week-tag.invoice {
+  background: rgba(78, 110, 138, 0.14);
+  color: var(--blue);
+}
+
+.week-tag.brand-tag {
+  color: #fff;
+}
+
+.week-tag.brand-cm {
+  background: var(--clay);
+}
+
+.week-tag.brand-hh {
+  background: var(--sage);
+}
+
+.week-tag.brand-om {
+  background: var(--blue);
+}
+
+.week-tag.brand-other {
+  background: var(--text-soft);
+}

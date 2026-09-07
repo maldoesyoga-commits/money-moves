@@ -10,7 +10,7 @@ import { startFocus } from './lib/focus'
 
 const MAX_PRIORITIES = 3
 
-function PlanningDay({ date, onBackToMonth }) {
+function PlanningDay({ date, onBackToMonth, backLabel = 'month' }) {
   const [priorities, setPriorities] = useState([])
   const [tasks, setTasks] = useState([])
   const [blocks, setBlocks] = useState([])
@@ -339,7 +339,7 @@ function PlanningDay({ date, onBackToMonth }) {
       {onBackToMonth && (
         <p className="hub-footer month-backlink">
           <button type="button" className="row-action-btn" onClick={onBackToMonth}>
-            ‹ Back to the month
+            {`‹ Back to the ${backLabel}`}
           </button>
         </p>
       )}

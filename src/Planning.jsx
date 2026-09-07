@@ -14,11 +14,13 @@ import { nextOccurrence } from './lib/recurrence'
 import CyclePanel from './CyclePanel'
 import PlanningDay from './PlanningDay'
 import PlanningMonth from './PlanningMonth'
+import PlanningWeek from './PlanningWeek'
 import { report } from './lib/report'
 
 function Planning() {
   const [horizon, setHorizon] = useState('week')
   const [cameFromMonth, setCameFromMonth] = useState(false)
+  const [cameFromWeek, setCameFromWeek] = useState(false)
   const [anchor, setAnchor] = useState(todayISO())
 
   const [entries, setEntries] = useState([])
@@ -309,13 +311,15 @@ function Planning() {
         <PlanningDay
           date={anchor}
           onBackToMonth={
-            cameFromMonth
+            cameFromMonth || cameFromWeek
               ? () => {
-                  setHorizon('month')
+                  setHorizon(cameFromWeek ? 'week' : 'month')
                   setCameFromMonth(false)
+                  setCameFromWeek(false)
                 }
               : null
           }
+          backLabel={cameFromWeek ? 'week' : 'month'}
         />
       )}
 
@@ -336,7 +340,19 @@ function Planning() {
         <CyclePanel horizon={horizon} start={start} end={end} />
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && (
+      {horizon === 'week' && (
+        <PlanningWeek
+          start={start}
+          end={end}
+          onPickDay={(iso) => {
+            setAnchor(iso)
+            setHorizon('day')
+            setCameFromWeek(true)
+          }}
+        />
+      )}
+
+      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && (
       <div className="card">
         <h2>Plan</h2>
         <p className="list-row-sub">What this {horizon} is for.</p>
@@ -388,7 +404,7 @@ function Planning() {
 
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && (
+      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && (
       <div className="card">
         <div className="project-scope-header">
           <h2>Tasks due</h2>
@@ -428,7 +444,7 @@ function Planning() {
 
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && (
+      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && (
       <div className="card">
         <h2>Goals landing here</h2>
 
@@ -488,7 +504,7 @@ function Planning() {
 
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && otherGoals.length > 0 && (
+      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && otherGoals.length > 0 && (
         <div className="card">
           <div className="project-scope-header">
             <h2>Other goals</h2>
@@ -521,7 +537,7 @@ function Planning() {
         </div>
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && (
+      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && (
       <div className="card">
         <div className="project-scope-header">
           <h2>Savings goals</h2>

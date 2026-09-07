@@ -47,3 +47,27 @@ export function monthLabel(anchor) {
 }
 
 export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+// ISO-8601 week number: weeks start Monday, week 1 contains the first
+// Thursday of the year. This is the "week 37 of 52" people mean.
+export function isoWeek(iso) {
+  const date = new Date(`${iso}T12:00:00`)
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+  // Shift to the Thursday of this week.
+  const day = (target.getDay() + 6) % 7
+  target.setDate(target.getDate() - day + 3)
+
+  const firstThursday = new Date(target.getFullYear(), 0, 4)
+  const firstDay = (firstThursday.getDay() + 6) % 7
+  firstThursday.setDate(firstThursday.getDate() - firstDay + 3)
+
+  const week = 1 + Math.round((target - firstThursday) / (7 * 86400000))
+  return { week, year: target.getFullYear() }
+}
+
+// 52 or 53, depending on the year.
+export function weeksInYear(year) {
+  const dec28 = `${year}-12-28`
+  return isoWeek(dec28).week
+}
