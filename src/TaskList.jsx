@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
+import { REPEATS, REPEAT_LABEL, REPEAT_UNIT, nextOccurrence } from './lib/recurrence'
 
 const VIEWS = [
   { key: 'today', label: 'Today' },
@@ -101,12 +102,26 @@ function TaskList() {
     }
   }
 
-  function toggleDone(task) {
+  async function toggleDone(task) {
     const done = task.status !== 'done'
-    updateTask(task.id, {
+
+    await updateTask(task.id, {
       status: done ? 'done' : 'todo',
       done_at: done ? new Date().toISOString() : null,
     })
+
+    // Completing a repeating task queues up the next one.
+    if (done && task.repeat_every) {
+      const next = nextOccurrence(task)
+      const { error } = await supabase.from('tasks').insert(next)
+
+      if (error) {
+        console.log('Failed to create next occurrence', error.message)
+        return
+      }
+
+      loadTasks()
+    }
   }
 
   async function deleteTask(id) {
@@ -263,6 +278,14 @@ function TaskList() {
                         {PRIORITY_LABEL[task.priority]}
                       </span>}
                       {task.project_id && <span>{projectName(task.project_id)}</span>}
+                      {task.repeat_every && (
+                        <span className="repeat-pill">
+                          ↻{' '}
+                          {task.repeat_interval > 1
+                            ? `every ${task.repeat_interval}`
+                            : REPEAT_LABEL[task.repeat_every]}
+                        </span>
+                      )}
                     </span>
                   </div>
 
@@ -305,6 +328,37 @@ function TaskList() {
                         </option>
                       ))}
                     </select>
+                    <select
+                      className="inline-select"
+                      value={task.repeat_every || ''}
+                      onChange={(e) =>
+                        updateTask(task.id, { repeat_every: e.target.value || null })
+                      }
+                    >
+                      {REPEATS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    {task.repeat_every && (
+                      <label className="filter-toggle repeat-interval">
+                        every
+                        <input
+                          type="number"
+                          min="1"
+                          max="52"
+                          className="target-input"
+                          value={task.repeat_interval || 1}
+                          onChange={(e) =>
+                            updateTask(task.id, {
+                              repeat_interval: Math.max(1, Number(e.target.value) || 1),
+                            })
+                          }
+                        />
+                        {REPEAT_UNIT[task.repeat_every]}
+                      </label>
+                    )}
                     <button
                       type="button"
                       className="row-action-btn row-action-btn-danger"

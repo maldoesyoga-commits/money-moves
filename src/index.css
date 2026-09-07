@@ -1812,3 +1812,21 @@ button.segmented-tab.active:hover {
   font-weight: 600;
   color: var(--sage);
 }
+
+.repeat-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--blue);
+  background: rgba(78, 110, 138, 0.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.repeat-interval {
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.repeat-interval .target-input {
+  width: 58px;
+}

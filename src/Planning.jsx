@@ -10,6 +10,7 @@ import {
   isCurrentPeriod,
 } from './lib/planPeriods'
 import { formatMoney } from './lib/format'
+import { nextOccurrence } from './lib/recurrence'
 
 function Planning() {
   const [horizon, setHorizon] = useState('week')
@@ -173,6 +174,14 @@ function Planning() {
     if (error) {
       console.log('Failed to update task', error.message)
       loadTasks()
+      return
+    }
+
+    // Repeating tasks queue up their next occurrence here too.
+    if (done && task.repeat_every) {
+      const { error: repeatError } = await supabase.from('tasks').insert(nextOccurrence(task))
+      if (repeatError) console.log('Failed to create next occurrence', repeatError.message)
+      loadTasks()
     }
   }
 
@@ -221,6 +230,12 @@ function Planning() {
 
   const periodGoals = goals.filter(
     (goal) => goal.status !== 'parked' && goal.target_date && goal.target_date >= start && goal.target_date <= end,
+  )
+
+  // Goals with no target date, or one outside this period, would otherwise
+  // be invisible — they get their own section so nothing gets lost.
+  const otherGoals = goals.filter(
+    (goal) => goal.status !== 'done' && !periodGoals.includes(goal),
   )
 
   const openTasks = tasks.filter((task) => task.status !== 'done')
@@ -414,6 +429,39 @@ function Planning() {
           </ul>
         )}
       </div>
+
+      {otherGoals.length > 0 && (
+        <div className="card">
+          <div className="project-scope-header">
+            <h2>Other goals</h2>
+            <span className="list-row-sub">{otherGoals.length}</span>
+          </div>
+          <ul className="list">
+            {otherGoals.map((goal) => (
+              <li key={goal.id} className="list-row project-row">
+                <div className="task-row-body">
+                  <div className="list-row-main task-main">
+                    <span className="list-row-title">{goal.title}</span>
+                    <span className="list-row-sub task-meta">
+                      <span>{goal.horizon}</span>
+                      {goal.status === 'parked' && <span className="priority-pill">Parked</span>}
+                      <span>{goal.target_date ? `target ${goal.target_date}` : 'no target date'}</span>
+                    </span>
+                  </div>
+                  <span className="money">{goal.progress}%</span>
+                  <button
+                    type="button"
+                    className="row-action-btn"
+                    onClick={() => updateGoal(goal.id, { target_date: end })}
+                  >
+                    Pull into {horizon}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="card">
         <div className="project-scope-header">
