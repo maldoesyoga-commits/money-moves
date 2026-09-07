@@ -5,6 +5,7 @@ import { HomeIcon } from './icons'
 import HomeHub from './HomeHub'
 import MoneyMoves from './MoneyMoves'
 import Tasks from './Tasks'
+import Planning from './Planning'
 
 const DEFAULT_SETTINGS = {
   weekly_floor: 400,
@@ -173,6 +174,7 @@ function App() {
         <Route path="/" element={<HomeHub />} />
         <Route path="/money/*" element={<MoneyMoves />} />
         <Route path="/tasks/*" element={<Tasks />} />
+        <Route path="/planning" element={<Planning />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

@@ -1318,3 +1318,51 @@ a.module-card:hover {
   border-color: var(--card-bg);
   box-shadow: 0 0 0 2px var(--text);
 }
+
+button.segmented-tab {
+  background: transparent;
+  border: none;
+  align-self: auto;
+}
+
+button.segmented-tab:hover {
+  background: transparent;
+  color: var(--sage);
+}
+
+button.segmented-tab.active,
+button.segmented-tab.active:hover {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.planning-module {
+  padding-bottom: 40px;
+}
+
+.planning-module .segmented-nav {
+  flex-wrap: wrap;
+}
+
+.goal-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.goal-progress-row .progress-track {
+  flex: 1;
+}
+
+.goal-progress-row input[type='range'] {
+  flex: 0 0 120px;
+  accent-color: var(--sage);
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.project-row .progress-track {
+  width: 100%;
+}

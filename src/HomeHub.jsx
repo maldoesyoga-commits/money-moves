@@ -22,7 +22,8 @@ const MODULES = [
     icon: '🗓️',
     name: 'Planning',
     tagline: 'Calendar and life planning',
-    enabled: false,
+    path: '/planning',
+    enabled: true,
   },
   {
     key: 'learning',
