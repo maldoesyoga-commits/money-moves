@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { todayISO, formatDueDate } from './lib/taskDates'
 import EmptyState from './EmptyState'
+import { report } from './lib/report'
 
 const MOODS = [
   { value: 'rough', label: 'Rough' },
@@ -31,7 +32,7 @@ function Journal() {
       .order('entry_date', { ascending: false })
 
     if (error) {
-      console.log('Failed to load journal', error.message)
+      report('Failed to load journal', error)
       return
     }
 
@@ -68,7 +69,7 @@ function Journal() {
           .eq('id', entryId)
 
         if (error) {
-          console.log('Failed to save journal entry', error.message)
+          report('Failed to save journal entry', error)
           return
         }
       } else {
@@ -79,7 +80,7 @@ function Journal() {
           .single()
 
         if (error) {
-          console.log('Failed to create journal entry', error.message)
+          report('Failed to create journal entry', error)
           return
         }
 
@@ -104,7 +105,7 @@ function Journal() {
     const { error } = await supabase.from('journal_entries').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete entry', error.message)
+      report('Failed to delete entry', error)
       loadEntries()
       return
     }

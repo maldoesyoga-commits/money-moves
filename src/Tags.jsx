@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import EmptyState from './EmptyState'
+import { report } from './lib/report'
 
 // How to display a tagged row from each table.
 const SOURCES = {
@@ -48,7 +49,7 @@ function Tags() {
     const { data, error } = await supabase.from('tags').select('*').order('name')
 
     if (error) {
-      console.log('Failed to load tags', error.message)
+      report('Failed to load tags', error)
       return
     }
 
@@ -79,7 +80,7 @@ function Tags() {
       .eq('tag_id', tag.id)
 
     if (error) {
-      console.log('Failed to load tagged items', error.message)
+      report('Failed to load tagged items', error)
       setLoading(false)
       return
     }
@@ -113,7 +114,7 @@ function Tags() {
     const { error } = await supabase.from('tags').insert({ name })
 
     if (error) {
-      console.log('Failed to create tag', error.message)
+      report('Failed to create tag', error)
       return
     }
 
@@ -128,7 +129,7 @@ function Tags() {
     const { error } = await supabase.from('tags').delete().eq('id', tag.id)
 
     if (error) {
-      console.log('Failed to delete tag', error.message)
+      report('Failed to delete tag', error)
       loadTags()
     }
   }

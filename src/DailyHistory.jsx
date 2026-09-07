@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import { todayISO } from './lib/taskDates'
 import { sleepHours, formatSleep, shiftDate, streakFrom } from './lib/daily'
 import EmptyState from './EmptyState'
+import { report } from './lib/report'
 
 const RANGES = [
   { key: 14, label: '2 weeks' },
@@ -30,7 +31,7 @@ function DailyHistory() {
       .order('entry_date', { ascending: false })
 
     if (error) {
-      console.log('Failed to load daily history', error.message)
+      report('Failed to load daily history', error)
       return
     }
 

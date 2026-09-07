@@ -4,6 +4,7 @@ import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import { BRANDS, BRAND_LABEL, formatHours } from './lib/freelance'
+import { report } from './lib/report'
 
 const STATUSES = [
   { value: 'active', label: 'Active' },
@@ -25,7 +26,7 @@ function Clients() {
     const { data, error } = await supabase.from('clients').select('*').order('name')
 
     if (error) {
-      console.log('Failed to load clients', error.message)
+      report('Failed to load clients', error)
       return
     }
 
@@ -38,7 +39,7 @@ function Clients() {
       .select('client_id, minutes')
 
     if (entryError) {
-      console.log('Failed to load time entries', entryError.message)
+      report('Failed to load time entries', entryError)
       return
     }
 
@@ -47,7 +48,7 @@ function Clients() {
       .select('client_id, amount, status')
 
     if (invoiceError) {
-      console.log('Failed to load invoices', invoiceError.message)
+      report('Failed to load invoices', invoiceError)
       return
     }
 
@@ -84,7 +85,7 @@ function Clients() {
     const { error } = await supabase.from('clients').insert(payload)
 
     if (error) {
-      console.log('Failed to create client', error.message)
+      report('Failed to create client', error)
       return
     }
 
@@ -99,7 +100,7 @@ function Clients() {
     const { error } = await supabase.from('clients').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update client', error.message)
+      report('Failed to update client', error)
       loadClients()
     }
   }
@@ -110,7 +111,7 @@ function Clients() {
     const { error } = await supabase.from('clients').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete client', error.message)
+      report('Failed to delete client', error)
       loadClients()
     }
   }

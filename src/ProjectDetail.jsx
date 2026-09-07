@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import TaskList from './TaskList'
+import { report } from './lib/report'
 
 const STATUSES = [
   { value: 'active', label: 'Active' },
@@ -27,7 +28,7 @@ function ProjectDetail() {
       .single()
 
     if (error) {
-      console.log('Failed to load project', error.message)
+      report('Failed to load project', error)
       return
     }
 
@@ -42,7 +43,7 @@ function ProjectDetail() {
       .eq('project_id', projectId)
 
     if (error) {
-      console.log('Failed to load project task counts', error.message)
+      report('Failed to load project task counts', error)
       return
     }
 
@@ -72,7 +73,7 @@ function ProjectDetail() {
         .eq('id', projectId)
 
       if (error) {
-        console.log('Failed to save project notes', error.message)
+        report('Failed to save project notes', error)
         return
       }
 
@@ -89,7 +90,7 @@ function ProjectDetail() {
     const { error } = await supabase.from('projects').update(patch).eq('id', projectId)
 
     if (error) {
-      console.log('Failed to update project', error.message)
+      report('Failed to update project', error)
       loadProject()
     }
   }

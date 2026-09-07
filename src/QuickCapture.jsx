@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { todayISO } from './lib/taskDates'
+import { report } from './lib/report'
 
 const KINDS = [
   { key: 'task', label: 'Task', placeholder: 'What needs doing?' },
@@ -70,7 +71,7 @@ function QuickCapture() {
     setSaving(false)
 
     if (error) {
-      console.log('Quick capture failed', error.message)
+      report('Quick capture failed', error)
       setFlash("Couldn't save that.")
       return
     }

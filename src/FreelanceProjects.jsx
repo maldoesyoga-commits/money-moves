@@ -4,6 +4,7 @@ import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import { formatHours } from './lib/freelance'
 import { formatDueDate, isOverdue } from './lib/taskDates'
+import { report } from './lib/report'
 
 const STATUSES = [
   { value: 'active', label: 'Active' },
@@ -31,7 +32,7 @@ function FreelanceProjects() {
       .order('created_at')
 
     if (error) {
-      console.log('Failed to load freelance projects', error.message)
+      report('Failed to load freelance projects', error)
       return
     }
 
@@ -42,7 +43,7 @@ function FreelanceProjects() {
     const { data, error } = await supabase.from('clients').select('*').order('name')
 
     if (error) {
-      console.log('Failed to load clients', error.message)
+      report('Failed to load clients', error)
       return
     }
 
@@ -53,7 +54,7 @@ function FreelanceProjects() {
     const { data, error } = await supabase.from('time_entries').select('project_id, minutes')
 
     if (error) {
-      console.log('Failed to load time entries', error.message)
+      report('Failed to load time entries', error)
       return
     }
 
@@ -85,7 +86,7 @@ function FreelanceProjects() {
     const { error } = await supabase.from('freelance_projects').insert(payload)
 
     if (error) {
-      console.log('Failed to create freelance project', error.message)
+      report('Failed to create freelance project', error)
       return
     }
 
@@ -100,7 +101,7 @@ function FreelanceProjects() {
     const { error } = await supabase.from('freelance_projects').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update freelance project', error.message)
+      report('Failed to update freelance project', error)
       loadProjects()
     }
   }
@@ -111,7 +112,7 @@ function FreelanceProjects() {
     const { error } = await supabase.from('freelance_projects').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete freelance project', error.message)
+      report('Failed to delete freelance project', error)
       loadProjects()
     }
   }

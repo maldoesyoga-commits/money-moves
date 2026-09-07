@@ -12,6 +12,7 @@ import {
 import { formatMoney } from './lib/format'
 import { nextOccurrence } from './lib/recurrence'
 import CyclePanel from './CyclePanel'
+import { report } from './lib/report'
 
 function Planning() {
   const [horizon, setHorizon] = useState('week')
@@ -24,6 +25,7 @@ function Planning() {
   const [fundBalances, setFundBalances] = useState({})
 
   const [entryTitle, setEntryTitle] = useState('')
+  const [entryError, setEntryError] = useState(null)
   const [goalTitle, setGoalTitle] = useState('')
   const [goalDate, setGoalDate] = useState('')
 
@@ -40,7 +42,7 @@ function Planning() {
       .order('created_at')
 
     if (error) {
-      console.log('Failed to load plan entries', error.message)
+      report('Failed to load plan entries', error)
       return
     }
 
@@ -56,7 +58,7 @@ function Planning() {
       .order('due_date')
 
     if (error) {
-      console.log('Failed to load tasks for period', error.message)
+      report('Failed to load tasks for period', error)
       return
     }
 
@@ -67,7 +69,7 @@ function Planning() {
     const { data, error } = await supabase.from('goals').select('*').order('target_date')
 
     if (error) {
-      console.log('Failed to load goals', error.message)
+      report('Failed to load goals', error)
       return
     }
 
@@ -78,7 +80,7 @@ function Planning() {
     const { data, error } = await supabase.from('savings_funds').select('*')
 
     if (error) {
-      console.log('Failed to load savings funds', error.message)
+      report('Failed to load savings funds', error)
       return
     }
 
@@ -89,7 +91,7 @@ function Planning() {
       .select('fund_id, amount, direction')
 
     if (entryError) {
-      console.log('Failed to load fund entries', entryError.message)
+      report('Failed to load fund entries', entryError)
       return
     }
 
@@ -114,9 +116,13 @@ function Planning() {
 
   async function handleAddEntry(e) {
     e.preventDefault()
+    setEntryError(null)
 
     const trimmed = entryTitle.trim()
-    if (!trimmed) return
+    if (!trimmed) {
+      setEntryError('Type something first.')
+      return
+    }
 
     const { error } = await supabase.from('plan_entries').insert({
       horizon,
@@ -127,7 +133,13 @@ function Planning() {
     })
 
     if (error) {
-      console.log('Failed to add plan entry', error.message)
+      report('Failed to add plan entry', error)
+      // Show it rather than failing silently.
+      setEntryError(
+        error.message.includes('does not exist')
+          ? "The plan_entries table isn't set up yet — run supabase/planning.sql."
+          : error.message,
+      )
       return
     }
 
@@ -142,7 +154,7 @@ function Planning() {
     const { error } = await supabase.from('plan_entries').update({ done }).eq('id', entry.id)
 
     if (error) {
-      console.log('Failed to update plan entry', error.message)
+      report('Failed to update plan entry', error)
       loadEntries()
     }
   }
@@ -153,7 +165,7 @@ function Planning() {
     const { error } = await supabase.from('plan_entries').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete plan entry', error.message)
+      report('Failed to delete plan entry', error)
       loadEntries()
     }
   }
@@ -173,7 +185,7 @@ function Planning() {
       .eq('id', task.id)
 
     if (error) {
-      console.log('Failed to update task', error.message)
+      report('Failed to update task', error)
       loadTasks()
       return
     }
@@ -181,7 +193,7 @@ function Planning() {
     // Repeating tasks queue up their next occurrence here too.
     if (done && task.repeat_every) {
       const { error: repeatError } = await supabase.from('tasks').insert(nextOccurrence(task))
-      if (repeatError) console.log('Failed to create next occurrence', repeatError.message)
+      if (repeatError) report('Failed to create next occurrence', repeatError)
       loadTasks()
     }
   }
@@ -198,7 +210,7 @@ function Planning() {
     const { error } = await supabase.from('goals').insert(payload)
 
     if (error) {
-      console.log('Failed to add goal', error.message)
+      report('Failed to add goal', error)
       return
     }
 
@@ -213,7 +225,7 @@ function Planning() {
     const { error } = await supabase.from('goals').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update goal', error.message)
+      report('Failed to update goal', error)
       loadGoals()
     }
   }
@@ -224,7 +236,7 @@ function Planning() {
     const { error } = await supabase.from('goals').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete goal', error.message)
+      report('Failed to delete goal', error)
       loadGoals()
     }
   }
@@ -308,6 +320,8 @@ function Planning() {
           />
           <button type="submit">Add</button>
         </form>
+
+        {entryError && <p className="error-text">{entryError}</p>}
 
         {entries.length === 0 ? (
           <p className="empty-text">Nothing planned yet.</p>

@@ -10,6 +10,7 @@ import {
   scoreTone,
 } from './lib/twelveWeek'
 import EmptyState from './EmptyState'
+import { report } from './lib/report'
 
 function GoalsScoreboard({ cycle }) {
   const [goals, setGoals] = useState([])
@@ -24,7 +25,7 @@ function GoalsScoreboard({ cycle }) {
       .order('sort_order')
 
     if (error) {
-      console.log('Failed to load goals', error.message)
+      report('Failed to load goals', error)
       return
     }
 

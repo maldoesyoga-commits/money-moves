@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import EmptyState from './EmptyState'
 import { formatDueDate } from './lib/taskDates'
+import { report } from './lib/report'
 
 const MEAL_TYPES = [
   { value: 'breakfast', label: 'Breakfast' },
@@ -35,7 +36,7 @@ function Recipes() {
     const { data, error } = await supabase.from('meals').select('*').order('name')
 
     if (error) {
-      console.log('Failed to load meals', error.message)
+      report('Failed to load meals', error)
       return
     }
 
@@ -57,7 +58,7 @@ function Recipes() {
       .insert({ name: trimmed, meal_type: mealType, effort })
 
     if (error) {
-      console.log('Failed to add meal', error.message)
+      report('Failed to add meal', error)
       return
     }
 
@@ -71,7 +72,7 @@ function Recipes() {
     const { error } = await supabase.from('meals').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update meal', error.message)
+      report('Failed to update meal', error)
       loadMeals()
     }
   }
@@ -82,7 +83,7 @@ function Recipes() {
     const { error } = await supabase.from('meals').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete meal', error.message)
+      report('Failed to delete meal', error)
       loadMeals()
     }
   }
@@ -101,7 +102,7 @@ function Recipes() {
       .from('grocery_items')
       .insert(lines.map((item) => ({ name: item, meal_id: meal.id })))
 
-    if (error) console.log('Failed to add ingredients', error.message)
+    if (error) report('Failed to add ingredients', error)
   }
 
   const visible = meals.filter((meal) => {

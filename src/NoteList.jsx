@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
+import { report } from './lib/report'
 
 const CATEGORIES = [
   { value: 'note', label: 'Note' },
@@ -33,7 +34,7 @@ function NoteList() {
       .order('updated_at', { ascending: false })
 
     if (error) {
-      console.log('Failed to load notes', error.message)
+      report('Failed to load notes', error)
       return
     }
 
@@ -44,7 +45,7 @@ function NoteList() {
     const { data, error } = await supabase.from('projects').select('id, name').order('name')
 
     if (error) {
-      console.log('Failed to load projects', error.message)
+      report('Failed to load projects', error)
       return
     }
 
@@ -69,7 +70,7 @@ function NoteList() {
       .single()
 
     if (error) {
-      console.log('Failed to add note', error.message)
+      report('Failed to add note', error)
       return
     }
 
@@ -87,7 +88,7 @@ function NoteList() {
       .eq('id', id)
 
     if (error) {
-      console.log('Failed to update note', error.message)
+      report('Failed to update note', error)
       loadNotes()
     }
   }
@@ -106,7 +107,7 @@ function NoteList() {
     const { error } = await supabase.from('notes').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete note', error.message)
+      report('Failed to delete note', error)
       loadNotes()
     }
   }

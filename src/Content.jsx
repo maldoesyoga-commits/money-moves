@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
 import { todayISO, formatDueDate } from './lib/taskDates'
+import { report } from './lib/report'
 
 const STAGES = [
   { value: 'idea', label: 'Idea' },
@@ -62,7 +63,7 @@ function Content() {
       .order('created_at')
 
     if (error) {
-      console.log('Failed to load content items', error.message)
+      report('Failed to load content items', error)
       return
     }
 
@@ -84,7 +85,7 @@ function Content() {
       .insert({ title: trimmed, brand, platform, sort_order: items.length })
 
     if (error) {
-      console.log('Failed to add content item', error.message)
+      report('Failed to add content item', error)
       return
     }
 
@@ -98,7 +99,7 @@ function Content() {
     const { error } = await supabase.from('content_items').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update content item', error.message)
+      report('Failed to update content item', error)
       loadItems()
     }
   }
@@ -121,7 +122,7 @@ function Content() {
     const { error } = await supabase.from('content_items').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete content item', error.message)
+      report('Failed to delete content item', error)
       loadItems()
     }
   }

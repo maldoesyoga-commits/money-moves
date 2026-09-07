@@ -5,6 +5,7 @@ import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import { formatHours } from './lib/freelance'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
+import { report } from './lib/report'
 
 const STATUSES = [
   { value: 'draft', label: 'Draft' },
@@ -32,7 +33,7 @@ function Invoices() {
       .order('issue_date', { ascending: false })
 
     if (error) {
-      console.log('Failed to load invoices', error.message)
+      report('Failed to load invoices', error)
       return
     }
 
@@ -46,7 +47,7 @@ function Invoices() {
       .order('name')
 
     if (clientError) {
-      console.log('Failed to load clients', clientError.message)
+      report('Failed to load clients', clientError)
       return
     }
 
@@ -56,7 +57,7 @@ function Invoices() {
       .order('name')
 
     if (projectError) {
-      console.log('Failed to load freelance projects', projectError.message)
+      report('Failed to load freelance projects', projectError)
       return
     }
 
@@ -67,7 +68,7 @@ function Invoices() {
       .eq('billable', true)
 
     if (entryError) {
-      console.log('Failed to load unbilled time', entryError.message)
+      report('Failed to load unbilled time', entryError)
       return
     }
 
@@ -121,7 +122,7 @@ function Invoices() {
     const { data, error } = await supabase.from('invoices').insert(payload).select().single()
 
     if (error) {
-      console.log('Failed to create invoice', error.message)
+      report('Failed to create invoice', error)
       return
     }
 
@@ -133,7 +134,7 @@ function Invoices() {
         .update({ invoice_id: data.id })
         .in('id', ids)
 
-      if (linkError) console.log('Failed to attach time entries', linkError.message)
+      if (linkError) report('Failed to attach time entries', linkError)
     }
 
     setAmount('')
@@ -148,7 +149,7 @@ function Invoices() {
     const { error } = await supabase.from('invoices').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update invoice', error.message)
+      report('Failed to update invoice', error)
       loadInvoices()
     }
   }
@@ -166,14 +167,14 @@ function Invoices() {
       .update({ invoice_id: null })
       .eq('invoice_id', id)
 
-    if (unlinkError) console.log('Failed to release time entries', unlinkError.message)
+    if (unlinkError) report('Failed to release time entries', unlinkError)
 
     setInvoices((prev) => prev.filter((invoice) => invoice.id !== id))
 
     const { error } = await supabase.from('invoices').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete invoice', error.message)
+      report('Failed to delete invoice', error)
       loadInvoices()
     }
 

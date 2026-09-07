@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { todayISO } from './lib/taskDates'
 import { periodRange, shiftPeriod, periodLabel, isCurrentPeriod, daysInRange } from './lib/planPeriods'
+import { report } from './lib/report'
 
 const MEAL_TYPES = [
   { value: 'breakfast', label: 'Breakfast' },
@@ -30,7 +31,7 @@ function MealPlan() {
       .order('plan_date')
 
     if (error) {
-      console.log('Failed to load meal plan', error.message)
+      report('Failed to load meal plan', error)
       return
     }
 
@@ -41,7 +42,7 @@ function MealPlan() {
     const { data, error } = await supabase.from('meals').select('*').order('name')
 
     if (error) {
-      console.log('Failed to load meals', error.message)
+      report('Failed to load meals', error)
       return
     }
 
@@ -66,7 +67,7 @@ function MealPlan() {
     const { error } = await supabase.from('meal_plan').insert(payload)
 
     if (error) {
-      console.log('Failed to plan meal', error.message)
+      report('Failed to plan meal', error)
       return
     }
 
@@ -80,7 +81,7 @@ function MealPlan() {
     const { error } = await supabase.from('meal_plan').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to remove planned meal', error.message)
+      report('Failed to remove planned meal', error)
       loadPlan()
     }
   }
@@ -94,7 +95,7 @@ function MealPlan() {
       .eq('id', row.meal_id)
 
     if (error) {
-      console.log('Failed to mark meal as made', error.message)
+      report('Failed to mark meal as made', error)
       return
     }
 
@@ -133,7 +134,7 @@ function MealPlan() {
     const { error } = await supabase.from('grocery_items').insert(merged)
 
     if (error) {
-      console.log('Failed to add week to list', error.message)
+      report('Failed to add week to list', error)
       setWeekMessage("Couldn't add those.")
       return
     }
@@ -156,7 +157,7 @@ function MealPlan() {
       .from('grocery_items')
       .insert(lines.map((name) => ({ name, meal_id: meal.id })))
 
-    if (error) console.log('Failed to add ingredients', error.message)
+    if (error) report('Failed to add ingredients', error)
   }
 
   function titleFor(row) {

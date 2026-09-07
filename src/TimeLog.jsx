@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
 import { formatHours, parseDuration } from './lib/freelance'
 import { todayISO } from './lib/taskDates'
+import { report } from './lib/report'
 
 const RANGES = [
   { key: 'week', label: 'This week' },
@@ -41,7 +42,7 @@ function TimeLog() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.log('Failed to load time entries', error.message)
+      report('Failed to load time entries', error)
       return
     }
 
@@ -55,7 +56,7 @@ function TimeLog() {
       .order('name')
 
     if (clientError) {
-      console.log('Failed to load clients', clientError.message)
+      report('Failed to load clients', clientError)
       return
     }
 
@@ -65,7 +66,7 @@ function TimeLog() {
       .order('name')
 
     if (projectError) {
-      console.log('Failed to load freelance projects', projectError.message)
+      report('Failed to load freelance projects', projectError)
       return
     }
 
@@ -106,7 +107,7 @@ function TimeLog() {
     const { error } = await supabase.from('time_entries').insert(payload)
 
     if (error) {
-      console.log('Failed to add time entry', error.message)
+      report('Failed to add time entry', error)
       return
     }
 
@@ -121,7 +122,7 @@ function TimeLog() {
     const { error } = await supabase.from('time_entries').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update time entry', error.message)
+      report('Failed to update time entry', error)
       loadEntries()
     }
   }
@@ -132,7 +133,7 @@ function TimeLog() {
     const { error } = await supabase.from('time_entries').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete time entry', error.message)
+      report('Failed to delete time entry', error)
       loadEntries()
     }
   }

@@ -7,6 +7,7 @@ import GoalsScoreboard from './GoalsScoreboard'
 import EmptyState from './EmptyState'
 import { todayISO } from './lib/taskDates'
 import { weekNumberFor, cycleEnd, quarterOf } from './lib/twelveWeek'
+import { report } from './lib/report'
 
 const TABS = [
   { to: '/goals', label: 'This week', end: true },
@@ -30,7 +31,7 @@ function Goals() {
       .limit(1)
 
     if (error) {
-      console.log('Failed to load cycle', error.message)
+      report('Failed to load cycle', error)
       setCycle(null)
       return
     }
@@ -53,7 +54,7 @@ function Goals() {
       .insert({ title: trimmed, start_date: startDate, status: 'active' })
 
     if (error) {
-      console.log('Failed to create cycle', error.message)
+      report('Failed to create cycle', error)
       return
     }
 

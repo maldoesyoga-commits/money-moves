@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import EmptyState from './EmptyState'
+import { report } from './lib/report'
 
 const STATUSES = [
   { value: 'active', label: 'Active' },
@@ -38,7 +39,7 @@ function Projects() {
       .order('created_at')
 
     if (error) {
-      console.log('Failed to load projects', error.message)
+      report('Failed to load projects', error)
       return
     }
 
@@ -49,7 +50,7 @@ function Projects() {
     const { data, error } = await supabase.from('tasks').select('project_id, status')
 
     if (error) {
-      console.log('Failed to load task counts', error.message)
+      report('Failed to load task counts', error)
       return
     }
 
@@ -82,7 +83,7 @@ function Projects() {
     const { error } = await supabase.from('projects').insert(payload)
 
     if (error) {
-      console.log('Failed to create project', error.message)
+      report('Failed to create project', error)
       return
     }
 
@@ -98,7 +99,7 @@ function Projects() {
     const { error } = await supabase.from('projects').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update project', error.message)
+      report('Failed to update project', error)
       loadProjects()
     }
   }

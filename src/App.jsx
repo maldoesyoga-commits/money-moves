@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import { report } from './lib/report'
 import { HomeIcon, SearchIcon } from './icons'
 import HomeHub from './HomeHub'
 import MoneyMoves from './MoneyMoves'
@@ -20,6 +21,7 @@ import Review from './Review'
 import GlobalNav from './GlobalNav'
 import ThemeToggle from './ThemeToggle'
 import QuickCapture from './QuickCapture'
+import ErrorToast from './ErrorToast'
 
 const DEFAULT_SETTINGS = {
   weekly_floor: 400,
@@ -59,7 +61,7 @@ async function seedDefaultsIfFirstRun() {
     .select('user_id')
 
   if (selectError) {
-    console.error('Failed to check settings for first-run seeding', selectError)
+    report('Failed to check settings for first-run seeding', selectError)
     return
   }
 
@@ -67,15 +69,15 @@ async function seedDefaultsIfFirstRun() {
 
   const { error: settingsError } = await supabase.from('settings').insert(DEFAULT_SETTINGS)
   if (settingsError) {
-    console.error('Failed to seed default settings', settingsError)
+    report('Failed to seed default settings', settingsError)
     return
   }
 
   const { error: accountsError } = await supabase.from('accounts').insert(DEFAULT_ACCOUNTS)
-  if (accountsError) console.error('Failed to seed default accounts', accountsError)
+  if (accountsError) report('Failed to seed default accounts', accountsError)
 
   const { error: categoriesError } = await supabase.from('categories').insert(DEFAULT_CATEGORIES)
-  if (categoriesError) console.error('Failed to seed default categories', categoriesError)
+  if (categoriesError) report('Failed to seed default categories', categoriesError)
 
   window.location.reload()
 }
@@ -210,6 +212,7 @@ function App() {
       </Routes>
       <QuickCapture />
       <GlobalNav />
+      <ErrorToast />
     </div>
   )
 }

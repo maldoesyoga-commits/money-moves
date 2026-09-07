@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import EmptyState from './EmptyState'
 import { todayISO } from './lib/taskDates'
+import { report } from './lib/report'
 
 const VIEWS = [
   { key: 'doing', label: 'In progress' },
@@ -47,7 +48,7 @@ function Learning() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.log('Failed to load learning items', error.message)
+      report('Failed to load learning items', error)
       return
     }
 
@@ -61,7 +62,7 @@ function Learning() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.log('Failed to load learning notes', error.message)
+      report('Failed to load learning notes', error)
       return
     }
 
@@ -91,7 +92,7 @@ function Learning() {
     const { error } = await supabase.from('learning_items').insert(payload)
 
     if (error) {
-      console.log('Failed to add learning item', error.message)
+      report('Failed to add learning item', error)
       return
     }
 
@@ -107,7 +108,7 @@ function Learning() {
     const { error } = await supabase.from('learning_items').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update learning item', error.message)
+      report('Failed to update learning item', error)
       loadItems()
     }
   }
@@ -146,7 +147,7 @@ function Learning() {
     const { error } = await supabase.from('learning_items').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete learning item', error.message)
+      report('Failed to delete learning item', error)
       loadItems()
     }
   }
@@ -160,7 +161,7 @@ function Learning() {
     const { error } = await supabase.from('learning_notes').insert({ item_id: itemId, body })
 
     if (error) {
-      console.log('Failed to add note', error.message)
+      report('Failed to add note', error)
       return
     }
 
@@ -172,7 +173,7 @@ function Learning() {
     const { error } = await supabase.from('learning_notes').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete note', error.message)
+      report('Failed to delete note', error)
       return
     }
 

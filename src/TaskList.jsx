@@ -7,6 +7,7 @@ import TaskBoard from './TaskBoard'
 import TaskCalendar from './TaskCalendar'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
 import { REPEATS, REPEAT_LABEL, REPEAT_UNIT, nextOccurrence } from './lib/recurrence'
+import { report } from './lib/report'
 
 const VIEWS = [
   { key: 'today', label: 'Today' },
@@ -53,7 +54,7 @@ function TaskList({ onChanged }) {
       .order('created_at')
 
     if (error) {
-      console.log('Failed to load tasks', error.message)
+      report('Failed to load tasks', error)
       return
     }
 
@@ -68,7 +69,7 @@ function TaskList({ onChanged }) {
       .order('created_at')
 
     if (error) {
-      console.log('Failed to load projects', error.message)
+      report('Failed to load projects', error)
       return
     }
 
@@ -109,7 +110,7 @@ function TaskList({ onChanged }) {
     const { error } = await supabase.from('tasks').insert(payload)
 
     if (error) {
-      console.log('Failed to add task', error.message)
+      report('Failed to add task', error)
       return
     }
 
@@ -125,7 +126,7 @@ function TaskList({ onChanged }) {
     const { error } = await supabase.from('tasks').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update task', error.message)
+      report('Failed to update task', error)
       loadTasks()
       return
     }
@@ -147,7 +148,7 @@ function TaskList({ onChanged }) {
       const { error } = await supabase.from('tasks').insert(next)
 
       if (error) {
-        console.log('Failed to create next occurrence', error.message)
+        report('Failed to create next occurrence', error)
         return
       }
 
@@ -161,7 +162,7 @@ function TaskList({ onChanged }) {
     const { error } = await supabase.from('tasks').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete task', error.message)
+      report('Failed to delete task', error)
       loadTasks()
       return
     }

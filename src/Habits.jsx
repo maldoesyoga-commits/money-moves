@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import { todayISO } from './lib/taskDates'
 import { streakFrom, shiftDate } from './lib/daily'
 import EmptyState from './EmptyState'
+import { report } from './lib/report'
 
 const SLOTS = [
   { value: 'any', label: 'Any time' },
@@ -35,7 +36,7 @@ function Habits() {
       .order('created_at')
 
     if (error) {
-      console.log('Failed to load habits', error.message)
+      report('Failed to load habits', error)
       return
     }
 
@@ -52,7 +53,7 @@ function Habits() {
       .gte('log_date', from)
 
     if (error) {
-      console.log('Failed to load habit logs', error.message)
+      report('Failed to load habit logs', error)
       return
     }
 
@@ -76,7 +77,7 @@ function Habits() {
     const { error } = await supabase.from('habits').insert(payload)
 
     if (error) {
-      console.log('Failed to add habit', error.message)
+      report('Failed to add habit', error)
       return
     }
 
@@ -92,7 +93,7 @@ function Habits() {
       .insert(STARTERS.map((habit, index) => ({ ...habit, sort_order: index })))
 
     if (error) {
-      console.log('Failed to add starter habits', error.message)
+      report('Failed to add starter habits', error)
       return
     }
 
@@ -105,7 +106,7 @@ function Habits() {
     const { error } = await supabase.from('habits').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update habit', error.message)
+      report('Failed to update habit', error)
       loadHabits()
     }
   }
@@ -116,7 +117,7 @@ function Habits() {
     const { error } = await supabase.from('habits').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete habit', error.message)
+      report('Failed to delete habit', error)
       loadHabits()
     }
   }

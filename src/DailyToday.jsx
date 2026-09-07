@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { todayISO, formatDueDate } from './lib/taskDates'
 import { DEFAULT_MOOD_WORDS, sleepHours, formatSleep, shiftDate } from './lib/daily'
+import { report } from './lib/report'
 
 function DailyToday() {
   const [date, setDate] = useState(todayISO())
@@ -23,7 +24,7 @@ function DailyToday() {
       .maybeSingle()
 
     if (error) {
-      console.log('Failed to load daily log', error.message)
+      report('Failed to load daily log', error)
       return
     }
 
@@ -40,7 +41,7 @@ function DailyToday() {
       .order('word')
 
     if (error) {
-      console.log('Mood words unavailable, using defaults', error.message)
+      report('Mood words unavailable, using defaults', error)
       setMoodWords(DEFAULT_MOOD_WORDS.map((word) => ({ id: word, word })))
       return
     }
@@ -51,7 +52,7 @@ function DailyToday() {
         .insert(DEFAULT_MOOD_WORDS.map((word, index) => ({ word, sort_order: index })))
 
       if (seedError) {
-        console.log('Failed to seed mood words', seedError.message)
+        report('Failed to seed mood words', seedError)
         setMoodWords(DEFAULT_MOOD_WORDS.map((word) => ({ id: word, word })))
         return
       }
@@ -85,7 +86,7 @@ function DailyToday() {
       .insert({ word, sort_order: moodWords.length })
 
     if (error) {
-      console.log('Failed to add mood word', error.message)
+      report('Failed to add mood word', error)
       return
     }
 
@@ -100,7 +101,7 @@ function DailyToday() {
     const { error } = await supabase.from('mood_words').update({ active: false }).eq('id', row.id)
 
     if (error) {
-      console.log('Failed to remove mood word', error.message)
+      report('Failed to remove mood word', error)
       loadMoodWords()
     }
   }
@@ -114,7 +115,7 @@ function DailyToday() {
       .order('created_at')
 
     if (error) {
-      console.log('Failed to load habits', error.message)
+      report('Failed to load habits', error)
       return
     }
 
@@ -128,7 +129,7 @@ function DailyToday() {
       .eq('log_date', date)
 
     if (error) {
-      console.log('Failed to load habit logs', error.message)
+      report('Failed to load habit logs', error)
       return
     }
 
@@ -171,7 +172,7 @@ function DailyToday() {
         .upsert(payload, { onConflict: 'user_id,entry_date' })
 
       if (error) {
-        console.log('Failed to save daily log', error.message)
+        report('Failed to save daily log', error)
         return
       }
 
@@ -200,7 +201,7 @@ function DailyToday() {
       setDoneToday((prev) => prev.filter((row) => row.id !== existing.id))
       const { error } = await supabase.from('habit_logs').delete().eq('id', existing.id)
       if (error) {
-        console.log('Failed to untick habit', error.message)
+        report('Failed to untick habit', error)
         loadHabitLogs()
       }
       return
@@ -211,7 +212,7 @@ function DailyToday() {
       .insert({ habit_id: habit.id, log_date: date })
 
     if (error) {
-      console.log('Failed to tick habit', error.message)
+      report('Failed to tick habit', error)
       return
     }
 

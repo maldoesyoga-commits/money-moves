@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
 import { getPeriodContaining, periodLabel } from './lib/period'
 import { isSpendingTxn } from './lib/spending'
+import { report } from './lib/report'
 
 // Shows the Food category group's budget against real spending this
 // statement period, and what the outstanding grocery list would add.
@@ -20,7 +21,7 @@ function FoodBudget({ estimate }) {
         .single()
 
       if (settingsError) {
-        console.log('Food budget skipped settings', settingsError.message)
+        report('Food budget skipped settings', settingsError)
         return
       }
 
@@ -33,7 +34,7 @@ function FoodBudget({ estimate }) {
         .eq('category_group', 'Food')
 
       if (categoryError) {
-        console.log('Food budget skipped categories', categoryError.message)
+        report('Food budget skipped categories', categoryError)
         return
       }
 
@@ -53,7 +54,7 @@ function FoodBudget({ estimate }) {
         .lte('txn_date', period.endKey)
 
       if (txnError) {
-        console.log('Food budget skipped transactions', txnError.message)
+        report('Food budget skipped transactions', txnError)
         return
       }
 

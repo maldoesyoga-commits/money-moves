@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { cycleEnd, quarterOf, CYCLE_WEEKS } from './lib/twelveWeek'
 import EmptyState from './EmptyState'
+import { report } from './lib/report'
 
 const COLORS = ['#3f6b5c', '#b87333', '#4e6e8a', '#bf8f6b', '#6e7a75']
 
@@ -22,7 +23,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
       .order('sort_order')
 
     if (error) {
-      console.log('Failed to load goals', error.message)
+      report('Failed to load goals', error)
       return
     }
 
@@ -41,7 +42,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
       .order('sort_order')
 
     if (tacticError) {
-      console.log('Failed to load tactics', tacticError.message)
+      report('Failed to load tactics', tacticError)
       return
     }
 
@@ -58,7 +59,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
       .update({ vision: vision || null })
       .eq('id', cycle.id)
 
-    if (error) console.log('Failed to save vision', error.message)
+    if (error) report('Failed to save vision', error)
   }
 
   async function addGoal(e) {
@@ -75,7 +76,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
     })
 
     if (error) {
-      console.log('Failed to add goal', error.message)
+      report('Failed to add goal', error)
       return
     }
 
@@ -89,7 +90,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
     const { error } = await supabase.from('twy_goals').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update goal', error.message)
+      report('Failed to update goal', error)
       load()
     }
   }
@@ -100,7 +101,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
     const { error } = await supabase.from('twy_goals').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete goal', error.message)
+      report('Failed to delete goal', error)
       load()
     }
   }
@@ -125,7 +126,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
     const { error } = await supabase.from('twy_tactics').insert(payload)
 
     if (error) {
-      console.log('Failed to add tactic', error.message)
+      report('Failed to add tactic', error)
       return
     }
 
@@ -139,7 +140,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
     const { error } = await supabase.from('twy_tactics').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update tactic', error.message)
+      report('Failed to update tactic', error)
       load()
     }
   }
@@ -150,7 +151,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
     const { error } = await supabase.from('twy_tactics').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete tactic', error.message)
+      report('Failed to delete tactic', error)
       load()
     }
   }
@@ -162,7 +163,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
       .eq('id', cycle.id)
 
     if (error) {
-      console.log('Failed to close cycle', error.message)
+      report('Failed to close cycle', error)
       return
     }
 

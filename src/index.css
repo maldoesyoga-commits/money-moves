@@ -2659,3 +2659,49 @@ button.segmented-tab.active:hover {
   margin-right: 6px;
   vertical-align: middle;
 }
+
+/* A failed save says so, above the nav, until dismissed. */
+
+.error-toast {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 20;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--terracotta-muted);
+  border-left: 4px solid var(--terracotta-muted);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(45, 50, 48, 0.22);
+}
+
+.error-toast-body {
+  min-width: 0;
+}
+
+.error-toast-body strong {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  color: var(--terracotta-muted-text);
+  margin-bottom: 2px;
+}
+
+.error-toast-body p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.error-toast-context {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-soft);
+}

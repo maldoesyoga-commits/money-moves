@@ -11,6 +11,7 @@ import {
   BUFFER_WEEK,
 } from './lib/twelveWeek'
 import EmptyState from './EmptyState'
+import { report } from './lib/report'
 
 function GoalsWeek({ cycle }) {
   const current = weekNumberFor(cycle.start_date) || 1
@@ -28,7 +29,7 @@ function GoalsWeek({ cycle }) {
       .order('sort_order')
 
     if (goalError) {
-      console.log('Failed to load goals', goalError.message)
+      report('Failed to load goals', goalError)
       return
     }
 
@@ -48,7 +49,7 @@ function GoalsWeek({ cycle }) {
       .order('sort_order')
 
     if (tacticError) {
-      console.log('Failed to load tactics', tacticError.message)
+      report('Failed to load tactics', tacticError)
       return
     }
 
@@ -59,7 +60,7 @@ function GoalsWeek({ cycle }) {
       .select('*')
 
     if (logError) {
-      console.log('Failed to load tactic logs', logError.message)
+      report('Failed to load tactic logs', logError)
       return
     }
 
@@ -85,7 +86,7 @@ function GoalsWeek({ cycle }) {
       .single()
 
     if (error) {
-      console.log('Failed to log tactic', error.message)
+      report('Failed to log tactic', error)
       return
     }
 
@@ -102,7 +103,7 @@ function GoalsWeek({ cycle }) {
     const { error } = await supabase.from('twy_tactic_logs').delete().eq('id', last.id)
 
     if (error) {
-      console.log('Failed to undo tactic log', error.message)
+      report('Failed to undo tactic log', error)
       load()
     }
   }

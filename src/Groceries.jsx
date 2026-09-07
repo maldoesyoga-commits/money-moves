@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import FoodBudget from './FoodBudget'
+import { report } from './lib/report'
 
 const AISLES = [
   { value: 'produce', label: 'Produce' },
@@ -30,7 +31,7 @@ function Groceries() {
       .order('created_at')
 
     if (error) {
-      console.log('Failed to load grocery items', error.message)
+      report('Failed to load grocery items', error)
       return
     }
 
@@ -53,7 +54,7 @@ function Groceries() {
     const { error } = await supabase.from('grocery_items').insert(payload)
 
     if (error) {
-      console.log('Failed to add grocery item', error.message)
+      report('Failed to add grocery item', error)
       return
     }
 
@@ -68,7 +69,7 @@ function Groceries() {
     const { error } = await supabase.from('grocery_items').update(patch).eq('id', id)
 
     if (error) {
-      console.log('Failed to update grocery item', error.message)
+      report('Failed to update grocery item', error)
       loadItems()
     }
   }
@@ -79,7 +80,7 @@ function Groceries() {
     const { error } = await supabase.from('grocery_items').delete().eq('id', id)
 
     if (error) {
-      console.log('Failed to delete grocery item', error.message)
+      report('Failed to delete grocery item', error)
       loadItems()
     }
   }
@@ -93,7 +94,7 @@ function Groceries() {
     const { error } = await supabase.from('grocery_items').delete().in('id', gotIds)
 
     if (error) {
-      console.log('Failed to clear list', error.message)
+      report('Failed to clear list', error)
       loadItems()
     }
   }

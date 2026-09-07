@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { report } from './lib/report'
 
 // Attach/detach tags on any row, in any module.
 // Usage: <TagPicker table="tasks" id={task.id} />
@@ -13,7 +14,7 @@ function TagPicker({ table, id }) {
     const { data, error } = await supabase.from('tags').select('*').order('name')
 
     if (error) {
-      console.log('Failed to load tags', error.message)
+      report('Failed to load tags', error)
       return
     }
 
@@ -28,7 +29,7 @@ function TagPicker({ table, id }) {
       .eq('item_id', id)
 
     if (error) {
-      console.log('Failed to load taggings', error.message)
+      report('Failed to load taggings', error)
       return
     }
 
@@ -46,7 +47,7 @@ function TagPicker({ table, id }) {
       .insert({ tag_id: tagId, item_table: table, item_id: id })
 
     if (error) {
-      console.log('Failed to attach tag', error.message)
+      report('Failed to attach tag', error)
       return
     }
 
@@ -59,7 +60,7 @@ function TagPicker({ table, id }) {
     const { error } = await supabase.from('taggings').delete().eq('id', taggingId)
 
     if (error) {
-      console.log('Failed to remove tag', error.message)
+      report('Failed to remove tag', error)
       loadMine()
     }
   }
@@ -78,7 +79,7 @@ function TagPicker({ table, id }) {
       const { data, error } = await supabase.from('tags').insert({ name }).select().single()
 
       if (error) {
-        console.log('Failed to create tag', error.message)
+        report('Failed to create tag', error)
         return
       }
 
