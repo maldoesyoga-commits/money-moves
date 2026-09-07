@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { todayISO } from './lib/taskDates'
+import { startFocus, DEFAULT_MINUTES } from './lib/focus'
+import { useNavigate } from 'react-router-dom'
 import { report } from './lib/report'
 
 const KINDS = [
@@ -12,6 +14,7 @@ const KINDS = [
 ]
 
 function QuickCapture() {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [kind, setKind] = useState('task')
   const [text, setText] = useState('')
@@ -101,6 +104,18 @@ function QuickCapture() {
     <div className="capture-sheet" role="dialog" aria-label="Quick capture">
       <div className="capture-head">
         <strong>Quick capture</strong>
+        <button
+          type="button"
+          className="row-action-btn"
+          onClick={() => {
+            startFocus({ minutes: DEFAULT_MINUTES, label: text.trim() })
+            setOpen(false)
+            navigate('/focus')
+          }}
+          title={`Start a ${DEFAULT_MINUTES} minute focus block`}
+        >
+          Focus 50
+        </button>
         <button
           type="button"
           className="row-action-btn"

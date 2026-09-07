@@ -7,6 +7,7 @@ import TaskBoard from './TaskBoard'
 import TaskCalendar from './TaskCalendar'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
 import { REPEATS, REPEAT_LABEL, REPEAT_UNIT, nextOccurrence } from './lib/recurrence'
+import { startFocus } from './lib/focus'
 import { report } from './lib/report'
 
 const VIEWS = [
@@ -461,6 +462,14 @@ function TaskList({ onChanged }) {
                         {REPEAT_UNIT[task.repeat_every]}
                       </label>
                     )}
+                    <button
+                      type="button"
+                      className="row-action-btn"
+                      onClick={() => startFocus({ label: task.title, taskId: task.id })}
+                      title="Start a 50 minute focus block"
+                    >
+                      Focus 50
+                    </button>
                     <button
                       type="button"
                       className="row-action-btn row-action-btn-danger"

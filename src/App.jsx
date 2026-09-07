@@ -16,6 +16,8 @@ import Backup from './Backup'
 import Notes from './Notes'
 import Daily from './Daily'
 import Goals from './Goals'
+import FocusTimer from './FocusTimer'
+import FocusIndicator from './FocusIndicator'
 import Tags from './Tags'
 import Review from './Review'
 import GlobalNav from './GlobalNav'
@@ -186,6 +188,7 @@ function App() {
           <p>Logged in as {session.user.email}</p>
         </div>
         <div className="topbar-right">
+          <FocusIndicator />
           <ThemeToggle />
           <button type="button" className="btn-secondary" onClick={handleLogout}>
             Log out
@@ -205,6 +208,7 @@ function App() {
         <Route path="/notes/*" element={<Notes />} />
         <Route path="/daily/*" element={<Daily />} />
         <Route path="/goals/*" element={<Goals />} />
+        <Route path="/focus" element={<FocusTimer />} />
         <Route path="/tags" element={<Tags />} />
         <Route path="/review" element={<Review />} />
         <Route path="/backup" element={<Backup />} />

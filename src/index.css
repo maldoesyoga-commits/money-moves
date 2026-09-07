@@ -2705,3 +2705,287 @@ button.segmented-tab.active:hover {
   font-size: 11px;
   color: var(--text-soft);
 }
+
+/* ---------- Daily planner ---------- */
+
+.priority-number {
+  width: 22px;
+  flex-shrink: 0;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--clay);
+}
+
+.overdue-heading {
+  color: var(--terracotta-muted-text);
+}
+
+.day-timeline {
+  display: grid;
+  grid-auto-rows: minmax(38px, auto);
+  gap: 3px;
+  margin-top: 16px;
+}
+
+.slot {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 3px;
+}
+
+.slot-time {
+  flex: 0 0 62px;
+  padding-top: 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+.slot-now {
+  border-top-color: var(--clay);
+}
+
+.slot-now .slot-time {
+  color: var(--clay);
+  font-weight: 700;
+}
+
+.slot-empty {
+  flex: 1;
+  padding: 0;
+  font-size: 14px;
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: 8px;
+  align-self: stretch;
+  text-align: left;
+  padding-left: 10px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.slot:hover .slot-empty {
+  opacity: 1;
+  border-color: var(--border);
+}
+
+.slot-block {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border-left: 3px solid var(--sage);
+  background: var(--sage-soft);
+}
+
+.slot-block.done {
+  opacity: 0.5;
+}
+
+.slot-block.kind-admin {
+  border-left-color: var(--blue);
+  background: rgba(78, 110, 138, 0.12);
+}
+
+.slot-block.kind-meeting {
+  border-left-color: var(--clay);
+  background: var(--clay-soft);
+}
+
+.slot-block.kind-break {
+  border-left-color: var(--text-soft);
+  background: var(--border);
+}
+
+.slot-block.kind-personal {
+  border-left-color: var(--terracotta-muted);
+  background: var(--terracotta-muted-soft);
+}
+
+.slot-label {
+  flex: 1;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  align-self: auto;
+}
+
+.slot-label:hover {
+  background: transparent;
+  color: var(--sage);
+}
+
+.slot-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.slot-form {
+  flex: 1;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.slot-form input {
+  flex: 1 1 130px;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+/* ---------- Month planner ---------- */
+
+.month-grid .month-day {
+  min-height: 64px;
+  justify-content: flex-start;
+  padding-top: 6px;
+}
+
+.month-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.month-mark {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-soft);
+}
+
+.month-mark.tasks {
+  width: auto;
+  height: auto;
+  min-width: 16px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sage);
+  background: var(--sage-soft);
+}
+
+.month-mark.tasks.late {
+  color: var(--terracotta-muted-text);
+  background: var(--terracotta-muted-soft);
+}
+
+.month-mark.content {
+  background: var(--clay);
+}
+
+.month-mark.invoice {
+  background: var(--blue);
+}
+
+.month-mark.plan {
+  background: var(--sage);
+}
+
+.month-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--text-soft);
+}
+
+.month-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---------- Focus ---------- */
+
+.focus-module {
+  padding-bottom: 40px;
+}
+
+.focus-card {
+  text-align: center;
+}
+
+.focus-clock {
+  font-family: var(--font-serif);
+  font-size: 64px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--sage);
+}
+
+.focus-done .focus-clock {
+  color: var(--clay);
+}
+
+.focus-label {
+  margin: 6px 0 16px;
+  color: var(--text-soft);
+}
+
+.focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.focus-actions button {
+  align-self: auto;
+}
+
+.focus-lengths {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.focus-input {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.focus-chip {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--sage);
+  background: var(--sage-soft);
+  border: 1px solid var(--sage);
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.focus-chip.paused {
+  color: var(--text-soft);
+  border-color: var(--border);
+  background: var(--border);
+}
+
+.focus-chip.done {
+  color: #fff;
+  background: var(--clay);
+  border-color: var(--clay);
+}

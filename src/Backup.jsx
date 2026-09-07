@@ -42,6 +42,8 @@ const TABLES = [
   'twy_goals',
   'twy_tactics',
   'twy_tactic_logs',
+  'time_blocks',
+  'focus_sessions',
 ]
 
 function download(filename, text, type) {
