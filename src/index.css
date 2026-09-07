@@ -2989,3 +2989,73 @@ button.segmented-tab.active:hover {
   background: var(--clay);
   border-color: var(--clay);
 }
+
+.intention-card {
+  border-left: 4px solid var(--clay);
+}
+
+.intention-input {
+  width: 100%;
+  margin-top: 12px;
+  font-family: var(--font-serif);
+  font-size: 17px;
+}
+
+/* ---------- Budget page ---------- */
+
+.budgets-page {
+  padding-bottom: 20px;
+}
+
+.budget-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.budget-actions button {
+  align-self: auto;
+}
+
+.budget-group-title {
+  margin-top: 0;
+}
+
+.budget-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.budget-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.budget-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.budget-inputs .target-input {
+  width: 84px;
+  text-align: right;
+}
+
+.budget-row-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.money.over {
+  color: var(--terracotta-muted-text);
+}

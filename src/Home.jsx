@@ -33,6 +33,7 @@ function Home() {
   const [categories, setCategories] = useState([])
 
   const { period, statementDay } = usePeriod()
+  const [budgets, setBudgets] = useState([])
 
   async function loadAccounts() {
     const { data, error } = await supabase.from('accounts').select('*').order('sort_order')
@@ -81,6 +82,18 @@ function Home() {
     setTransactions(data)
   }
 
+  async function loadBudgets() {
+    const { data, error } = await supabase.from('category_budgets').select('*')
+
+    if (error) {
+      // Budgets table may not exist yet — fall back to the old single target.
+      console.log('Budgets unavailable', error.message)
+      return
+    }
+
+    setBudgets(data)
+  }
+
   async function loadCategories() {
     const { data, error } = await supabase.from('categories').select('*')
 
@@ -98,6 +111,7 @@ function Home() {
     loadDebtEntries()
     loadTransactions()
     loadCategories()
+    loadBudgets()
   }, [])
 
   function categoryName(categoryId) {
@@ -144,10 +158,18 @@ function Home() {
 
   const latestTransactions = periodTransactions.slice(0, 5)
 
-  const budgets = categories
-    .filter((category) => category.monthly_target != null && Number(category.monthly_target) > 0)
+  function budgetAmountFor(category) {
+    const row = budgets.find(
+      (item) => item.category_id === category.id && item.period_start === period.startKey,
+    )
+    if (row) return Number(row.amount)
+    return category.monthly_target != null ? Number(category.monthly_target) : 0
+  }
+
+  const budgetRows = categories
+    .filter((category) => budgetAmountFor(category) > 0)
     .map((category) => {
-      const target = Number(category.monthly_target)
+      const target = budgetAmountFor(category)
       const spent = periodTransactions
         .filter((txn) => txn.category_id === category.id && isSpendingTxn(txn))
         .reduce((sum, txn) => sum + Number(txn.amount || 0), 0)
@@ -250,9 +272,9 @@ function Home() {
       <div className="card">
         <h2>Budgets</h2>
         <p className="list-row-sub">{periodLabel(period, statementDay)}</p>
-        {budgets.length > 0 ? (
+        {budgetRows.length > 0 ? (
           <div className="budget-list">
-            {budgets.map((budget) => (
+            {budgetRows.map((budget) => (
               <div key={budget.id}>
                 <div className="budget-row-header">
                   <span className="list-row-title">{budget.name}</span>
@@ -276,7 +298,7 @@ function Home() {
           </div>
         ) : (
           <p className="empty-text">
-            No budget targets set yet. Add one under More → Manage categories.
+            No budget set for this period. Set one under More → Budget.
           </p>
         )}
       </div>

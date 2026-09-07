@@ -9,6 +9,7 @@ import Transactions from './Transactions'
 import Import from './Import'
 import Receipts from './Receipts'
 import More from './More'
+import Budgets from './Budgets'
 import BottomNav from './BottomNav'
 import { PeriodProvider } from './PeriodContext'
 
@@ -33,6 +34,7 @@ function MoneyMoves() {
           <Route path="debts" element={<Debts />} />
           <Route path="import" element={<Import />} />
           <Route path="receipts" element={<Receipts />} />
+          <Route path="budgets" element={<Budgets />} />
           <Route path="more" element={<More />} />
           <Route path="*" element={<Navigate to="/money" replace />} />
         </Routes>

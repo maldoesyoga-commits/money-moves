@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import Subscriptions from './Subscriptions'
 import Categories from './Categories'
 import {
+  InsightsIcon,
   AccountsIcon,
   IncomeIcon,
   DebtsIcon,
@@ -10,6 +11,7 @@ import {
 } from './icons'
 
 const PAGES = [
+  { to: '/money/budgets', label: 'Budget', Icon: InsightsIcon, sub: 'What you meant to spend' },
   { to: '/money/accounts', label: 'Accounts', Icon: AccountsIcon, sub: 'Balances and buckets' },
   { to: '/money/income', label: 'Income', Icon: IncomeIcon, sub: 'Log a payment and split it' },
   { to: '/money/debts', label: 'Debts', Icon: DebtsIcon, sub: 'What you owe' },

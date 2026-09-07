@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { report } from './lib/report'
 import { todayISO } from './lib/taskDates'
 import { monthGrid, WEEKDAYS } from './lib/calendar'
+import BudgetPanel from './BudgetPanel'
 
 // Month view: everything dated, on one grid. Tasks due, content to publish,
 // day plans you've written, and invoices falling due.
@@ -49,7 +50,10 @@ function PlanningMonth({ anchor, start, end, onPickDay }) {
   const day = picked ? itemsFor(picked) : null
 
   return (
-    <div className="card">
+    <>
+      <BudgetPanel anchor={anchor} />
+
+      <div className="card">
       <div className="calendar-grid month-grid">
         {WEEKDAYS.map((weekday) => (
           <div key={weekday} className="calendar-weekday">
@@ -166,7 +170,8 @@ function PlanningMonth({ anchor, start, end, onPickDay }) {
           )}
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
 
