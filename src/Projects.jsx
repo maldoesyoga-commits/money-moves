@@ -187,11 +187,13 @@ function Projects() {
                       const index = BOARD_ORDER.indexOf(status)
 
                       return (
-                        <li key={project.id} className="board-card">
-                          <span
-                            className="project-dot"
-                            style={{ background: project.color || 'var(--text-soft)' }}
-                          />
+                        <li
+                          key={project.id}
+                          className={`board-card${status === 'archived' ? ' card-done' : ''}`}
+                          style={
+                            project.color ? { '--card-accent': project.color } : undefined
+                          }
+                        >
                           <Link
                             to={`/tasks/projects/${project.id}`}
                             className="board-card-title project-link"

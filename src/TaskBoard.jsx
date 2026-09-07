@@ -10,7 +10,7 @@ const ORDER = COLUMNS.map((column) => column.key)
 
 // Status board. Moving with ‹ › rather than drag — it works on a phone,
 // which dragging does not.
-function TaskBoard({ tasks, projectName, onMove, onOpen }) {
+function TaskBoard({ tasks, projectName, projectColor, onMove, onOpen }) {
   return (
     <div className="board">
       {COLUMNS.map((column) => {
@@ -30,9 +30,24 @@ function TaskBoard({ tasks, projectName, onMove, onOpen }) {
                 {columnTasks.map((task) => {
                   const index = ORDER.indexOf(task.status || 'todo')
                   const late = task.status !== 'done' && isOverdue(task.due_date)
+                  const accent = projectColor?.(task.project_id)
+
+                  // Stripe = project colour; tint = priority. Done cards fade.
+                  const classes = [
+                    'board-card',
+                    task.priority ? `card-priority-${task.priority}` : '',
+                    task.status === 'done' ? 'card-done' : '',
+                    late ? 'card-late' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')
 
                   return (
-                    <li key={task.id} className="board-card">
+                    <li
+                      key={task.id}
+                      className={classes}
+                      style={accent ? { '--card-accent': accent } : undefined}
+                    >
                       <button
                         type="button"
                         className="board-card-title"

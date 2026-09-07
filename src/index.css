@@ -2462,3 +2462,44 @@ button.segmented-tab.active:hover {
     font-size: 12px;
   }
 }
+
+/* Coloured kanban cards: a project-colour stripe down the left,
+   a priority tint behind, and done cards stepped back. */
+
+.board-card {
+  --card-accent: var(--border);
+  border-left: 4px solid var(--card-accent);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.board-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 50, 48, 0.1);
+}
+
+.board-card.card-priority-high {
+  background: var(--terracotta-muted-soft);
+}
+
+.board-card.card-priority-med {
+  background: var(--clay-soft);
+}
+
+.board-card.card-priority-low {
+  background: var(--sage-soft);
+}
+
+.board-card.card-late {
+  box-shadow: inset 0 0 0 1px var(--terracotta-muted);
+}
+
+.board-card.card-done {
+  opacity: 0.55;
+}
+
+.board-card.card-done .board-card-title {
+  text-decoration: line-through;
+  color: var(--text-soft);
+}

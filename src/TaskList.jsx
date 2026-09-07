@@ -215,6 +215,10 @@ function TaskList({ onChanged }) {
     return projects.find((project) => project.id === id)?.name
   }
 
+  function projectColor(id) {
+    return projects.find((project) => project.id === id)?.color || null
+  }
+
   function countFor(key) {
     const today = todayISO()
     return tasks.filter((task) => {
@@ -319,6 +323,7 @@ function TaskList({ onChanged }) {
         <TaskBoard
           tasks={scoped}
           projectName={projectName}
+          projectColor={projectColor}
           onMove={moveStatus}
           onOpen={openTask}
         />
