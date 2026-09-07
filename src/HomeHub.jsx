@@ -35,6 +35,14 @@ const MODULES = [
     enabled: true,
   },
   {
+    key: 'goals',
+    icon: '🎯',
+    name: 'Goals',
+    tagline: '12 week year and scoreboard',
+    path: '/goals',
+    enabled: true,
+  },
+  {
     key: 'planning',
     icon: '🗓️',
     name: 'Planning',

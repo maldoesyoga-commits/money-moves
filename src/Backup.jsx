@@ -38,6 +38,10 @@ const TABLES = [
   'habits',
   'habit_logs',
   'mood_words',
+  'twy_cycles',
+  'twy_goals',
+  'twy_tactics',
+  'twy_tactic_logs',
 ]
 
 function download(filename, text, type) {

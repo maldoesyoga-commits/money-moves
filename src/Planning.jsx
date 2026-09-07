@@ -11,6 +11,7 @@ import {
 } from './lib/planPeriods'
 import { formatMoney } from './lib/format'
 import { nextOccurrence } from './lib/recurrence'
+import CyclePanel from './CyclePanel'
 
 function Planning() {
   const [horizon, setHorizon] = useState('week')
@@ -288,6 +289,10 @@ function Planning() {
           ›
         </button>
       </div>
+
+      {(horizon === 'week' || horizon === 'quarter') && (
+        <CyclePanel horizon={horizon} start={start} end={end} />
+      )}
 
       <div className="card">
         <h2>Plan</h2>

@@ -110,6 +110,14 @@ const SOURCES = [
     sub: (row) => (row.body || '').slice(0, 70),
   },
   {
+    table: 'twy_goals',
+    columns: ['title', 'why', 'lag_measure'],
+    group: '12 week goals',
+    to: () => '/goals/plan',
+    title: (row) => row.title,
+    sub: (row) => row.lag_measure || 'goal',
+  },
+  {
     table: 'transactions',
     columns: ['note'],
     group: 'Transactions',
