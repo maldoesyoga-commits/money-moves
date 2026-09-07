@@ -1863,3 +1863,57 @@ button.segmented-tab.active:hover {
   line-height: 1.55;
   color: var(--text-soft);
 }
+
+.notes-module {
+  padding-bottom: 40px;
+}
+
+.notes-module textarea,
+.notes-module .learning-detail > input {
+  width: 100%;
+}
+
+.note-search {
+  max-width: none;
+  flex: 1;
+}
+
+.note-pinned {
+  background: rgba(184, 115, 51, 0.05);
+}
+
+.journal-box {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.journal-extras {
+  margin-top: 12px;
+}
+
+.journal-read {
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.project-detail-head .task-controls {
+  margin-top: 12px;
+}
+
+.project-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.project-notes {
+  margin-top: 12px;
+}
+
+.project-notes textarea {
+  width: 100%;
+}

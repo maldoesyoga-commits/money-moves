@@ -14,7 +14,7 @@ const VIEWS = [
 
 const PRIORITY_LABEL = { high: 'High', med: 'Medium', low: 'Low' }
 
-function TaskList() {
+function TaskList({ onChanged }) {
   const { projectId } = useParams()
 
   const [tasks, setTasks] = useState([])
@@ -90,6 +90,7 @@ function TaskList() {
     setTitle('')
     setDueDate('')
     loadTasks()
+    onChanged?.()
   }
 
   async function updateTask(id, patch) {
@@ -100,7 +101,10 @@ function TaskList() {
     if (error) {
       console.log('Failed to update task', error.message)
       loadTasks()
+      return
     }
+
+    onChanged?.()
   }
 
   async function toggleDone(task) {
@@ -133,7 +137,10 @@ function TaskList() {
     if (error) {
       console.log('Failed to delete task', error.message)
       loadTasks()
+      return
     }
+
+    onChanged?.()
   }
 
   const visible = useMemo(() => {

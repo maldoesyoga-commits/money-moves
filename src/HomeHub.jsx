@@ -19,6 +19,14 @@ const MODULES = [
     enabled: true,
   },
   {
+    key: 'notes',
+    icon: '📝',
+    name: 'Notes',
+    tagline: 'Notes, ideas, and a journal',
+    path: '/notes',
+    enabled: true,
+  },
+  {
     key: 'planning',
     icon: '🗓️',
     name: 'Planning',

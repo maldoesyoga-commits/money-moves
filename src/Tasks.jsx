@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, NavLink } from 'react-router-dom'
 import TaskList from './TaskList'
 import Projects from './Projects'
+import ProjectDetail from './ProjectDetail'
 
 const TABS = [
   { to: '/tasks', label: 'Tasks', end: true },
@@ -31,7 +32,7 @@ function Tasks() {
       <Routes>
         <Route path="/" element={<TaskList />} />
         <Route path="projects" element={<Projects />} />
-        <Route path="projects/:projectId" element={<TaskList />} />
+        <Route path="projects/:projectId" element={<ProjectDetail />} />
         <Route path="*" element={<Navigate to="/tasks" replace />} />
       </Routes>
     </section>

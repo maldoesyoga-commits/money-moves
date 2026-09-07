@@ -30,6 +30,8 @@ const TABLES = [
   'meals',
   'meal_plan',
   'grocery_items',
+  'notes',
+  'journal_entries',
 ]
 
 function download(filename, text, type) {

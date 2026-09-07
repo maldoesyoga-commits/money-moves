@@ -7,6 +7,7 @@ const KINDS = [
   { key: 'idea', label: 'Content idea', placeholder: 'The idea, in a few words' },
   { key: 'grocery', label: 'Grocery', placeholder: 'What to buy' },
   { key: 'learning', label: 'To learn', placeholder: 'Course, book, video…' },
+  { key: 'note', label: 'Note', placeholder: 'Jot it down' },
 ]
 
 function QuickCapture() {
@@ -56,6 +57,11 @@ function QuickCapture() {
 
     if (kind === 'learning') {
       table = 'learning_items'
+      payload = { title: trimmed }
+    }
+
+    if (kind === 'note') {
+      table = 'notes'
       payload = { title: trimmed }
     }
 

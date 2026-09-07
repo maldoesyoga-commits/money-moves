@@ -94,6 +94,22 @@ const SOURCES = [
     sub: (row) => (row.got_it ? 'got it' : row.aisle),
   },
   {
+    table: 'notes',
+    columns: ['title', 'body'],
+    group: 'Notes',
+    to: () => '/notes',
+    title: (row) => row.title || 'Untitled note',
+    sub: (row) => row.category,
+  },
+  {
+    table: 'journal_entries',
+    columns: ['body', 'gratitude'],
+    group: 'Journal',
+    to: () => '/notes/journal',
+    title: (row) => row.entry_date,
+    sub: (row) => (row.body || '').slice(0, 70),
+  },
+  {
     table: 'transactions',
     columns: ['note'],
     group: 'Transactions',

@@ -12,6 +12,7 @@ import Freelance from './Freelance'
 import Meals from './Meals'
 import Search from './Search'
 import Backup from './Backup'
+import Notes from './Notes'
 import QuickCapture from './QuickCapture'
 
 const DEFAULT_SETTINGS = {
@@ -190,6 +191,7 @@ function App() {
         <Route path="/freelance/*" element={<Freelance />} />
         <Route path="/meals/*" element={<Meals />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/notes/*" element={<Notes />} />
         <Route path="/backup" element={<Backup />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
