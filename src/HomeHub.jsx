@@ -98,6 +98,14 @@ function HomeHub() {
       </div>
 
       <p className="hub-footer">
+        <Link to="/review" className="project-link">
+          Weekly review
+        </Link>
+        {' · '}
+        <Link to="/tags" className="project-link">
+          Tags
+        </Link>
+        {' · '}
         <Link to="/backup" className="project-link">
           Back up my data
         </Link>

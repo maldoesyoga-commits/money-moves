@@ -16,6 +16,7 @@ function MealPlan() {
   const [meals, setMeals] = useState([])
   const [drafts, setDrafts] = useState({})
   const [mealType, setMealType] = useState('dinner')
+  const [weekMessage, setWeekMessage] = useState(null)
 
   const { start, end } = useMemo(() => periodRange('week', anchor), [anchor])
   const days = useMemo(() => daysInRange(start, end), [start, end])
@@ -100,6 +101,46 @@ function MealPlan() {
     loadMeals()
   }
 
+  // Every planned meal this week, ingredients into the grocery list at once.
+  async function addWeekToList() {
+    const mealIds = [...new Set(plan.map((row) => row.meal_id).filter(Boolean))]
+    const lines = []
+
+    mealIds.forEach((mealId) => {
+      const meal = meals.find((item) => item.id === mealId)
+      if (!meal?.ingredients) return
+
+      meal.ingredients
+        .split(/[\n,]/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .forEach((name) => lines.push({ name, meal_id: meal.id }))
+    })
+
+    if (lines.length === 0) {
+      setWeekMessage('No ingredients saved on this week\u2019s meals yet.')
+      return
+    }
+
+    // Merge duplicates across meals so you don't get onions three times.
+    const seen = new Map()
+    lines.forEach((line) => {
+      const key = line.name.toLowerCase()
+      if (!seen.has(key)) seen.set(key, line)
+    })
+    const merged = [...seen.values()]
+
+    const { error } = await supabase.from('grocery_items').insert(merged)
+
+    if (error) {
+      console.log('Failed to add week to list', error.message)
+      setWeekMessage("Couldn't add those.")
+      return
+    }
+
+    setWeekMessage(`Added ${merged.length} items to the grocery list.`)
+  }
+
   async function addIngredientsToList(row) {
     const meal = meals.find((item) => item.id === row.meal_id)
     if (!meal?.ingredients) return
@@ -151,6 +192,17 @@ function MealPlan() {
           ›
         </button>
       </div>
+
+      {plan.some((row) => row.meal_id) && (
+        <div className="unbilled-hint week-to-list">
+          <p className="list-row-sub">
+            {weekMessage || "Send every planned meal's ingredients to the grocery list."}
+          </p>
+          <button type="button" className="row-action-btn" onClick={addWeekToList}>
+            Whole week to list
+          </button>
+        </div>
+      )}
 
       <nav className="view-tabs">
         {MEAL_TYPES.map(({ value, label }) => (

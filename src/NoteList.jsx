@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
+import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
 
 const CATEGORIES = [
@@ -254,6 +255,7 @@ function NoteList() {
                       >
                         Delete
                       </button>
+                      <TagPicker table="notes" id={note.id} />
                     </div>
                   </div>
                 )}

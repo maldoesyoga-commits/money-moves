@@ -13,6 +13,10 @@ import Meals from './Meals'
 import Search from './Search'
 import Backup from './Backup'
 import Notes from './Notes'
+import Tags from './Tags'
+import Review from './Review'
+import GlobalNav from './GlobalNav'
+import ThemeToggle from './ThemeToggle'
 import QuickCapture from './QuickCapture'
 
 const DEFAULT_SETTINGS = {
@@ -177,9 +181,12 @@ function App() {
           </Link>
           <p>Logged in as {session.user.email}</p>
         </div>
-        <button type="button" className="btn-secondary" onClick={handleLogout}>
-          Log out
-        </button>
+        <div className="topbar-right">
+          <ThemeToggle />
+          <button type="button" className="btn-secondary" onClick={handleLogout}>
+            Log out
+          </button>
+        </div>
       </div>
       <Routes>
         <Route path="/" element={<HomeHub />} />
@@ -192,10 +199,13 @@ function App() {
         <Route path="/meals/*" element={<Meals />} />
         <Route path="/search" element={<Search />} />
         <Route path="/notes/*" element={<Notes />} />
+        <Route path="/tags" element={<Tags />} />
+        <Route path="/review" element={<Review />} />
         <Route path="/backup" element={<Backup />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <QuickCapture />
+      <GlobalNav />
     </div>
   )
 }

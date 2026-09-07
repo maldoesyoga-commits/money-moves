@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
 import { todayISO, formatDueDate } from './lib/taskDates'
 
@@ -252,6 +253,7 @@ function Content() {
               >
                 Delete
               </button>
+              <TagPicker table="content_items" id={item.id} />
             </div>
 
             <input

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
 import { REPEATS, REPEAT_LABEL, REPEAT_UNIT, nextOccurrence } from './lib/recurrence'
@@ -381,6 +382,7 @@ function TaskList({ onChanged }) {
                     >
                       Delete
                     </button>
+                    <TagPicker table="tasks" id={task.id} />
                   </div>
                 )}
               </li>

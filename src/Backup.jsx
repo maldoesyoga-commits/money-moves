@@ -32,6 +32,8 @@ const TABLES = [
   'grocery_items',
   'notes',
   'journal_entries',
+  'tags',
+  'taggings',
 ]
 
 function download(filename, text, type) {

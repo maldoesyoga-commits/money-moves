@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import { BRANDS, BRAND_LABEL, formatHours } from './lib/freelance'
@@ -236,6 +237,7 @@ function Clients() {
                       >
                         Delete
                       </button>
+                      <TagPicker table="clients" id={client.id} />
                     </div>
                     <input
                       type="text"

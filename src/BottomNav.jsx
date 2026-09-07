@@ -1,34 +1,26 @@
 import { NavLink } from 'react-router-dom'
-import {
-  HomeIcon,
-  TransactionsIcon,
-  InsightsIcon,
-  SavingsIcon,
-  MoreIcon,
-} from './icons'
 
-// Five tabs is the most that fits comfortably on a phone.
-// Everything else lives on the More page.
+// Money Moves' own section nav. Sits at the top of the module like every
+// other module's nav — the only bottom bar in the app is the global one.
 const TABS = [
-  { to: '/money', label: 'Home', Icon: HomeIcon, end: true },
-  { to: '/money/transactions', label: 'Transactions', Icon: TransactionsIcon },
-  { to: '/money/insights', label: 'Insights', Icon: InsightsIcon },
-  { to: '/money/savings', label: 'Savings', Icon: SavingsIcon },
-  { to: '/money/more', label: 'More', Icon: MoreIcon },
+  { to: '/money', label: 'Home', end: true },
+  { to: '/money/transactions', label: 'Transactions' },
+  { to: '/money/insights', label: 'Insights' },
+  { to: '/money/savings', label: 'Savings' },
+  { to: '/money/more', label: 'More' },
 ]
 
 function BottomNav() {
   return (
-    <nav className="bottom-nav">
-      {TABS.map(({ to, label, Icon, end }) => (
+    <nav className="segmented-nav money-nav">
+      {TABS.map(({ to, label, end }) => (
         <NavLink
           key={to}
           to={to}
           end={end}
-          className={({ isActive }) => `bottom-nav-tab${isActive ? ' active' : ''}`}
+          className={({ isActive }) => `segmented-tab${isActive ? ' active' : ''}`}
         >
-          <Icon className="bottom-nav-icon" />
-          <span className="bottom-nav-label">{label}</span>
+          {label}
         </NavLink>
       ))}
     </nav>

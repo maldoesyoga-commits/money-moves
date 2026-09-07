@@ -16,6 +16,13 @@ function MoneyMoves() {
   return (
     <PeriodProvider>
       <div className="money-module">
+        <div className="home-greeting">
+          <h1>Money Moves</h1>
+          <p className="list-row-sub">Budget, transactions and insights.</p>
+        </div>
+
+        <BottomNav />
+
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="insights" element={<Insights />} />
@@ -30,7 +37,6 @@ function MoneyMoves() {
           <Route path="*" element={<Navigate to="/money" replace />} />
         </Routes>
       </div>
-      <BottomNav />
     </PeriodProvider>
   )
 }

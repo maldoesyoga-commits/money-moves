@@ -1917,3 +1917,221 @@ button.segmented-tab.active:hover {
 .project-notes textarea {
   width: 100%;
 }
+
+/* ---------- Dark theme ---------- */
+/* Tokens only. Nothing below re-specifies a colour that isn't a token. */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #22262b;
+    --card-bg: #2b3036;
+    --text: #e8e6e0;
+    --text-soft: #9aa4a0;
+    --border: #3a4047;
+    --sage: #7fb39e;
+    --sage-soft: rgba(127, 179, 158, 0.16);
+    --clay: #d99a5e;
+    --clay-soft: rgba(217, 154, 94, 0.16);
+    --terracotta-muted: #cf9a76;
+    --terracotta-muted-soft: rgba(207, 154, 118, 0.18);
+    --terracotta-muted-text: #e0ab86;
+    --blue: #7ea3c2;
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #22262b;
+  --card-bg: #2b3036;
+  --text: #e8e6e0;
+  --text-soft: #9aa4a0;
+  --border: #3a4047;
+  --sage: #7fb39e;
+  --sage-soft: rgba(127, 179, 158, 0.16);
+  --clay: #d99a5e;
+  --clay-soft: rgba(217, 154, 94, 0.16);
+  --terracotta-muted: #cf9a76;
+  --terracotta-muted-soft: rgba(207, 154, 118, 0.18);
+  --terracotta-muted-text: #e0ab86;
+  --blue: #7ea3c2;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+  color-scheme: dark;
+}
+
+/* Inputs and buttons hard-coded #fff before the theme existed. */
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] textarea,
+:root:not([data-theme='light']) input,
+:root:not([data-theme='light']) select,
+:root:not([data-theme='light']) textarea {
+  background: var(--bg);
+  color: var(--text);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) input,
+  :root:not([data-theme='dark']) select,
+  :root:not([data-theme='dark']) textarea {
+    background: #fff;
+  }
+}
+
+:root[data-theme='dark'] button,
+:root[data-theme='dark'] .toggle-knob {
+  color: #1c1f23;
+}
+
+:root[data-theme='dark'] button.btn-secondary {
+  color: var(--sage);
+}
+
+:root[data-theme='dark'] .task-check,
+:root[data-theme='dark'] .row-action-btn,
+:root[data-theme='dark'] .icon-button,
+:root[data-theme='dark'] .view-tab,
+:root[data-theme='dark'] .segmented-tab,
+:root[data-theme='dark'] .tag-chip {
+  color: var(--text-soft);
+}
+
+:root[data-theme='dark'] .task-check.checked {
+  color: #1c1f23;
+}
+
+/* ---------- Global bottom nav ---------- */
+
+.app-shell {
+  padding-bottom: 110px;
+}
+
+.money-module {
+  padding-bottom: 0;
+}
+
+.money-nav {
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.theme-toggle {
+  font-size: 14px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ---------- Tags ---------- */
+
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tag-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  align-self: auto;
+}
+
+.tag-chip:hover {
+  color: var(--sage);
+  border-color: var(--sage);
+  background: var(--sage-soft);
+}
+
+.tag-chip.attached {
+  color: var(--sage);
+  border-color: var(--sage);
+  background: var(--sage-soft);
+}
+
+.tag-chip.add {
+  border-style: dashed;
+}
+
+.tag-count {
+  font-size: 10px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag-add-form input {
+  font-size: 12px;
+  padding: 4px 10px;
+  width: 130px;
+}
+
+.tags-module,
+.review-module {
+  padding-bottom: 40px;
+}
+
+/* ---------- Weekly review ---------- */
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.review-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.review-stat:hover {
+  transform: translateY(-2px);
+}
+
+.review-stat-value {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--sage);
+}
+
+.review-stat-label {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.review-stat-sub {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.week-to-list {
+  margin: 16px 0 4px;
+}
