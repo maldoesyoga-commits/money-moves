@@ -3318,3 +3318,87 @@ button.segmented-tab.active:hover {
 .money.score-low {
   color: var(--terracotta-muted-text);
 }
+
+/* ---------- Year planner ---------- */
+
+.year-quarter.now {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 1px var(--sage-soft);
+}
+
+.year-months {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.year-month {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  text-align: left;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  align-self: auto;
+}
+
+.year-month:hover {
+  border-color: var(--sage);
+  background: var(--sage-soft);
+  color: var(--text);
+}
+
+.year-month.now {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 1px var(--sage);
+}
+
+.year-month.past {
+  opacity: 0.7;
+}
+
+.year-month-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.year-month-cycle {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--clay);
+}
+
+.year-month-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.year-month-figure {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.year-month-row.paid {
+  color: var(--sage);
+  font-weight: 600;
+}
+
+.year-month-row.quiet {
+  opacity: 0.5;
+}
