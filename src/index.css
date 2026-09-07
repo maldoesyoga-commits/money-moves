@@ -2135,3 +2135,148 @@ button.segmented-tab.active:hover {
 .week-to-list {
   margin: 16px 0 4px;
 }
+
+.daily-module {
+  padding-bottom: 40px;
+}
+
+.daily-readout {
+  margin-top: 10px;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--sage);
+}
+
+.daily-readout .list-row-sub {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.scale-row {
+  margin-top: 14px;
+}
+
+.scale-row label {
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-bottom: 6px;
+}
+
+.scale-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scale-dot {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  align-self: auto;
+  flex: 0 0 auto;
+}
+
+.scale-dot:hover {
+  color: var(--sage);
+  border-color: var(--sage);
+  background: var(--sage-soft);
+}
+
+.scale-dot.on,
+.scale-dot.on:hover {
+  color: #fff;
+  background: var(--sage);
+  border-color: var(--sage);
+}
+
+.water-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.water-actions button {
+  align-self: auto;
+}
+
+.habit-dots {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+.habit-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.habit-dot.on {
+  background: var(--sage);
+}
+
+.habit-slot {
+  margin-left: 8px;
+}
+
+.history-tabs {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  margin-bottom: 18px;
+}
+
+.mood-header {
+  margin-top: 20px;
+  margin-bottom: 4px;
+}
+
+.mood-header h3 {
+  margin-top: 0;
+}
+
+.mood-chip-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.mood-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: #fff;
+  background: var(--terracotta-muted);
+  border: none;
+  border-radius: 50%;
+  align-self: auto;
+}
+
+.mood-remove:hover {
+  background: var(--clay);
+}
+
+.mood-add {
+  margin-top: 12px;
+  max-width: 320px;
+}
+
+.retired-note {
+  margin-top: 8px;
+  font-style: italic;
+}

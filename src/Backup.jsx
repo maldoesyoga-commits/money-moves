@@ -34,6 +34,10 @@ const TABLES = [
   'journal_entries',
   'tags',
   'taggings',
+  'daily_logs',
+  'habits',
+  'habit_logs',
+  'mood_words',
 ]
 
 function download(filename, text, type) {

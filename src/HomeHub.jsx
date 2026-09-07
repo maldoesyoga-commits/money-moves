@@ -19,6 +19,14 @@ const MODULES = [
     enabled: true,
   },
   {
+    key: 'daily',
+    icon: '🌅',
+    name: 'Daily',
+    tagline: 'Sleep, mood, water, habits',
+    path: '/daily',
+    enabled: true,
+  },
+  {
     key: 'notes',
     icon: '📝',
     name: 'Notes',

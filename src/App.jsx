@@ -13,6 +13,7 @@ import Meals from './Meals'
 import Search from './Search'
 import Backup from './Backup'
 import Notes from './Notes'
+import Daily from './Daily'
 import Tags from './Tags'
 import Review from './Review'
 import GlobalNav from './GlobalNav'
@@ -199,6 +200,7 @@ function App() {
         <Route path="/meals/*" element={<Meals />} />
         <Route path="/search" element={<Search />} />
         <Route path="/notes/*" element={<Notes />} />
+        <Route path="/daily/*" element={<Daily />} />
         <Route path="/tags" element={<Tags />} />
         <Route path="/review" element={<Review />} />
         <Route path="/backup" element={<Backup />} />
