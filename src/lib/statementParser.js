@@ -107,7 +107,7 @@ function parseLine(line) {
   description = description
     .replace(/\s+/g, ' ')
     .trim()
-    .replace(/^[-–—,:\s]+|[-–—,:\s]+$/g, '')
+    .replace(/^[-–—,:|\s]+|[-–—,:|\s]+$/g, '')
     .trim()
 
   return {
@@ -122,7 +122,7 @@ export function parseStatementText(text) {
 
   return text
     .split(/\r?\n/)
-    .map((line) => parseLine(line))
+    .map((line) => parsePipeRow(line.trim()) || parseLine(line))
     .filter(Boolean)
 }
 

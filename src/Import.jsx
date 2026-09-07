@@ -16,6 +16,8 @@ function buildRows(candidates) {
   }))
 }
 
+const LEGACY_PIPE_PREFIX = /^\|\s*\|\s*(in|out)\s*\|\s*/i
+
 function Import() {
   const [categories, setCategories] = useState([])
   const [rows, setRows] = useState([])
@@ -26,6 +28,8 @@ function Import() {
   const [fileError, setFileError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [savedCount, setSavedCount] = useState(null)
+  const [cleaningUp, setCleaningUp] = useState(false)
+  const [cleanedCount, setCleanedCount] = useState(null)
 
   async function loadCategories() {
     const { data, error } = await supabase
@@ -124,6 +128,45 @@ function Import() {
     setSavedCount(rowsToInsert.length)
   }
 
+  async function handleCleanupLegacyNotes() {
+    setCleaningUp(true)
+    setCleanedCount(null)
+
+    const { data, error } = await supabase.from('transactions').select('id, note')
+
+    if (error) {
+      console.log(error.message)
+      setCleaningUp(false)
+      return
+    }
+
+    const rowsToFix = (data || [])
+      .filter((row) => row.note && LEGACY_PIPE_PREFIX.test(row.note))
+      .map((row) => ({
+        id: row.id,
+        note: row.note.replace(LEGACY_PIPE_PREFIX, '').trim() || 'Imported transaction',
+      }))
+
+    let cleaned = 0
+
+    for (const row of rowsToFix) {
+      const { error: updateError } = await supabase
+        .from('transactions')
+        .update({ note: row.note })
+        .eq('id', row.id)
+
+      if (updateError) {
+        console.log(updateError.message)
+        continue
+      }
+
+      cleaned += 1
+    }
+
+    setCleanedCount(cleaned)
+    setCleaningUp(false)
+  }
+
   const selectedRows = rows.filter((row) => row.included)
   const selectedCount = selectedRows.length
   const selectedTotal = selectedRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
@@ -174,6 +217,22 @@ function Import() {
           />
           <button type="submit">Parse rows</button>
         </form>
+      </div>
+
+      <div className="card">
+        <h2>Clean up legacy import prefixes</h2>
+        <p className="list-row-sub">
+          One-time fix for transactions imported before the paste parser was fixed, whose note
+          starts with a leftover "| | in/out |" prefix. Safe to run more than once.
+        </p>
+        <button type="button" onClick={handleCleanupLegacyNotes} disabled={cleaningUp}>
+          {cleaningUp ? 'Cleaning…' : 'Run cleanup'}
+        </button>
+        {cleanedCount !== null && (
+          <p className="list-row-sub">
+            Cleaned {cleanedCount} row{cleanedCount === 1 ? '' : 's'}.
+          </p>
+        )}
       </div>
 
       {attempted && rows.length === 0 && (
