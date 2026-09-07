@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import { BRANDS, BRAND_LABEL, formatHours } from './lib/freelance'
 
@@ -153,7 +154,10 @@ function Clients() {
       </div>
 
       {visible.length === 0 ? (
-        <p className="empty-text">No clients yet.</p>
+        <EmptyState icon="🤝" title="No clients yet">
+          Add whoever pays you — set their hourly rate here and time entries price
+          themselves. Brand tag keeps CM, HH and OM work apart.
+        </EmptyState>
       ) : (
         <ul className="list">
           {visible.map((client) => {

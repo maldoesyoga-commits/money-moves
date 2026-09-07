@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import EmptyState from './EmptyState'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
 import { REPEATS, REPEAT_LABEL, REPEAT_UNIT, nextOccurrence } from './lib/recurrence'
 
@@ -246,9 +247,16 @@ function TaskList() {
       )}
 
       {visible.length === 0 ? (
-        <p className="empty-text">
-          {view === 'done' ? 'Nothing finished yet.' : 'Nothing here — enjoy the quiet.'}
-        </p>
+        tasks.length === 0 ? (
+          <EmptyState icon="✅" title="No tasks yet">
+            Type one in the box above. Give it a due date and it shows under Today;
+            leave the date off and it waits in No date until you&apos;re ready.
+          </EmptyState>
+        ) : (
+          <p className="empty-text">
+            {view === 'done' ? 'Nothing finished yet.' : 'Nothing here — enjoy the quiet.'}
+          </p>
+        )
       ) : (
         <ul className="list">
           {visible.map((task) => {

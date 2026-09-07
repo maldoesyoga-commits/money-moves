@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import EmptyState from './EmptyState'
 import { todayISO } from './lib/taskDates'
 
 const VIEWS = [
@@ -233,7 +234,15 @@ function Learning() {
         </nav>
 
         {visible.length === 0 ? (
-          <p className="empty-text">Nothing here yet.</p>
+          items.length === 0 ? (
+            <EmptyState icon="📚" title="Nothing on the shelf yet">
+              Drop in a course you bought, a book you keep meaning to read, a YouTube
+              series — anything you&apos;re working through. Track progress and keep
+              notes against each one.
+            </EmptyState>
+          ) : (
+            <p className="empty-text">Nothing in this view.</p>
+          )
         ) : (
           <ul className="list">
             {visible.map((item) => {

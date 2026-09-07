@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import EmptyState from './EmptyState'
 import { todayISO, formatDueDate } from './lib/taskDates'
 
 const STAGES = [
@@ -339,7 +340,16 @@ function Content() {
         </div>
       </div>
 
-      {STAGES.map((stage) => {
+      {items.length === 0 && (
+        <div className="card">
+          <EmptyState icon="🎬" title="Nothing in the pipeline">
+            Capture an idea above and it lands in the Idea stage. Use the ‹ › buttons on
+            a card to walk it along — scripted, filmed, edited, posted.
+          </EmptyState>
+        </div>
+      )}
+
+      {items.length > 0 && STAGES.map((stage) => {
         const stageItems = filtered.filter((item) => item.stage === stage.value)
 
         return (

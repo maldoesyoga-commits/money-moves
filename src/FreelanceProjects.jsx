@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import { formatHours } from './lib/freelance'
 import { formatDueDate, isOverdue } from './lib/taskDates'
@@ -162,7 +163,10 @@ function FreelanceProjects() {
       </div>
 
       {visible.length === 0 ? (
-        <p className="empty-text">No projects yet.</p>
+        <EmptyState icon="💼" title="No projects yet">
+          A project is one piece of work for a client. Give it a rate here to override
+          the client&apos;s default, and log time against it.
+        </EmptyState>
       ) : (
         <ul className="list">
           {visible.map((project) => {

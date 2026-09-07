@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import EmptyState from './EmptyState'
 
 const STATUSES = [
   { value: 'active', label: 'Active' },
@@ -142,7 +143,10 @@ function Projects() {
       </div>
 
       {visible.length === 0 ? (
-        <p className="empty-text">No projects yet.</p>
+        <EmptyState icon="🗂️" title="No projects yet">
+          A project is a bucket for related tasks — a client job, a launch, a room
+          you&apos;re redoing. Name one above, then tag tasks into it.
+        </EmptyState>
       ) : (
         <ul className="list">
           {visible.map((project) => {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import EmptyState from './EmptyState'
 import { formatDueDate } from './lib/taskDates'
 
 const MEAL_TYPES = [
@@ -154,7 +155,10 @@ function Recipes() {
       </nav>
 
       {visible.length === 0 ? (
-        <p className="empty-text">No meals saved yet.</p>
+        <EmptyState icon="🍳" title="No meals saved yet">
+          Save the things you actually cook. Paste the ingredients in and you can send
+          them straight to the grocery list later with one tap.
+        </EmptyState>
       ) : (
         <ul className="list">
           {visible.map((meal) => {

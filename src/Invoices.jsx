@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import { formatHours } from './lib/freelance'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
@@ -269,7 +270,10 @@ function Invoices() {
       )}
 
       {invoices.length === 0 ? (
-        <p className="empty-text">No invoices yet.</p>
+        <EmptyState icon="🧾" title="No invoices yet">
+          Pick a client above and Homestead totals up their unbilled time for you.
+          Mark one paid and it reminds you to run it through Money Moves.
+        </EmptyState>
       ) : (
         <ul className="list">
           {invoices.map((invoice) => {

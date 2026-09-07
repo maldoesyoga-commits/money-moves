@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import FoodBudget from './FoodBudget'
 
@@ -157,7 +158,10 @@ function Groceries() {
       </div>
 
       {visible.length === 0 ? (
-        <p className="empty-text">List is empty.</p>
+        <EmptyState icon="🛒" title="List is empty">
+          Add items above, or send a meal&apos;s ingredients over from the Meals tab.
+          Tick things off as you shop.
+        </EmptyState>
       ) : (
         AISLES.map((group) => {
           const groupItems = visible.filter((item) => item.aisle === group.value)
