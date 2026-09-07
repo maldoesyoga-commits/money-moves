@@ -112,3 +112,12 @@ export function MoreIcon({ className }) {
     </Icon>
   )
 }
+
+export function SearchIcon({ className }) {
+  return (
+    <Icon className={className}>
+      <circle cx="10.5" cy="10.5" r="6" />
+      <path d="M15 15l4.5 4.5" />
+    </Icon>
+  )
+}

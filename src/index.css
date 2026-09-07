@@ -1619,3 +1619,11 @@ button.segmented-tab.active:hover {
   font-size: 12px;
   color: var(--text-soft);
 }
+
+.search-module {
+  padding-bottom: 40px;
+}
+
+.search-module input[type='search'] {
+  width: 100%;
+}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
-import { HomeIcon } from './icons'
+import { HomeIcon, SearchIcon } from './icons'
 import HomeHub from './HomeHub'
 import MoneyMoves from './MoneyMoves'
 import Tasks from './Tasks'
@@ -10,6 +10,7 @@ import Learning from './Learning'
 import Content from './Content'
 import Freelance from './Freelance'
 import Meals from './Meals'
+import Search from './Search'
 
 const DEFAULT_SETTINGS = {
   weekly_floor: 400,
@@ -168,6 +169,9 @@ function App() {
           <Link to="/" className="icon-button" aria-label="Back to hub">
             <HomeIcon className="bottom-nav-icon" />
           </Link>
+          <Link to="/search" className="icon-button" aria-label="Search">
+            <SearchIcon className="bottom-nav-icon" />
+          </Link>
           <p>Logged in as {session.user.email}</p>
         </div>
         <button type="button" className="btn-secondary" onClick={handleLogout}>
@@ -183,6 +187,7 @@ function App() {
         <Route path="/content" element={<Content />} />
         <Route path="/freelance/*" element={<Freelance />} />
         <Route path="/meals/*" element={<Meals />} />
+        <Route path="/search" element={<Search />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
