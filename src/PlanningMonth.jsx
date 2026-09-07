@@ -78,7 +78,12 @@ function PlanningMonth({ anchor, start, end, onPickDay }) {
               ]
                 .filter(Boolean)
                 .join(' ')}
-              onClick={() => setPicked(picked === cell.iso ? null : cell.iso)}
+              onClick={() => {
+                // First tap previews the day, a second tap opens it.
+                if (picked === cell.iso) onPickDay(cell.iso)
+                else setPicked(cell.iso)
+              }}
+              title={picked === cell.iso ? 'Tap again to open this day' : undefined}
             >
               <span className="calendar-daynum">{cell.dayOfMonth}</span>
 
@@ -115,11 +120,19 @@ function PlanningMonth({ anchor, start, end, onPickDay }) {
       {picked && (
         <div className="calendar-day-list">
           <div className="project-scope-header">
-            <h3>{picked}</h3>
-            <button type="button" className="row-action-btn" onClick={() => onPickDay(picked)}>
-              Open this day
+            <h3>
+              {new Date(`${picked}T12:00:00`).toLocaleDateString(undefined, {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </h3>
+            <button type="button" onClick={() => onPickDay(picked)}>
+              Open in the day planner
             </button>
           </div>
+
+          <p className="list-row-sub">Or tap the date again on the calendar.</p>
 
           {day.tasks.length === 0 &&
           day.content.length === 0 &&

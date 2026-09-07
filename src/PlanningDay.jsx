@@ -10,7 +10,7 @@ import { startFocus } from './lib/focus'
 
 const MAX_PRIORITIES = 3
 
-function PlanningDay({ date }) {
+function PlanningDay({ date, onBackToMonth }) {
   const [priorities, setPriorities] = useState([])
   const [tasks, setTasks] = useState([])
   const [blocks, setBlocks] = useState([])
@@ -18,6 +18,9 @@ function PlanningDay({ date }) {
   const [categories, setCategories] = useState([])
 
   const [priorityDraft, setPriorityDraft] = useState('')
+  const [intention, setIntention] = useState(null)
+  const [intentionDraft, setIntentionDraft] = useState('')
+  const [intentionSaved, setIntentionSaved] = useState(false)
   const [openSlot, setOpenSlot] = useState(null)
   const [blockDraft, setBlockDraft] = useState({ label: '', kind: 'focus', duration: SLOT_MIN })
 
@@ -40,7 +43,11 @@ function PlanningDay({ date }) {
       return
     }
 
-    setPriorities(data)
+    const found = data.find((row) => row.entry_kind === 'intention') || null
+    setIntention(found)
+    setIntentionDraft(found?.title || '')
+    setIntentionSaved(false)
+    setPriorities(data.filter((row) => row.entry_kind !== 'intention'))
   }, [date])
 
   // Today's tasks plus anything already overdue — the overdue ones are the
@@ -110,19 +117,76 @@ function PlanningDay({ date }) {
     loadMoney()
   }, [loadPriorities, loadTasks, loadBlocks, loadMoney])
 
+  // Exactly one intention per day — created on first save, updated after.
+  async function saveIntention() {
+    const trimmed = intentionDraft.trim()
+
+    if (!trimmed) {
+      if (!intention) return
+      const { error } = await supabase.from('plan_entries').delete().eq('id', intention.id)
+      if (error) {
+        report('Failed to clear the intention', error)
+        return
+      }
+      setIntention(null)
+      setIntentionSaved(true)
+      return
+    }
+
+    if (intention) {
+      const { error } = await supabase
+        .from('plan_entries')
+        .update({ title: trimmed })
+        .eq('id', intention.id)
+
+      if (error) {
+        report('Failed to save the intention', error)
+        return
+      }
+
+      setIntention({ ...intention, title: trimmed })
+      setIntentionSaved(true)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('plan_entries')
+      .insert({
+        horizon: 'day',
+        start_date: date,
+        end_date: date,
+        title: trimmed,
+        entry_kind: 'intention',
+        sort_order: -1,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      report('Failed to save the intention', error)
+      return
+    }
+
+    setIntention(data)
+    setIntentionSaved(true)
+  }
+
   async function addPriority(e) {
     e.preventDefault()
 
     const trimmed = priorityDraft.trim()
     if (!trimmed) return
 
+    if (priorityRows.length >= MAX_PRIORITIES) return
+
     const { error } = await supabase.from('plan_entries').insert({
       horizon: 'day',
       start_date: date,
       end_date: date,
       title: trimmed,
-      is_priority: priorities.filter((row) => row.is_priority).length < MAX_PRIORITIES,
-      sort_order: priorities.length,
+      entry_kind: 'priority',
+      is_priority: true,
+      sort_order: priorityRows.length,
     })
 
     if (error) {
@@ -253,8 +317,8 @@ function PlanningDay({ date }) {
     loadMoney()
   }
 
-  const priorityRows = priorities.filter((row) => row.is_priority)
-  const otherRows = priorities.filter((row) => !row.is_priority)
+  const priorityRows = priorities.filter((row) => row.entry_kind === 'priority')
+  const noteRows = priorities.filter((row) => row.entry_kind === 'note')
   const overdue = tasks.filter((task) => task.due_date && task.due_date < date)
   const dueToday = tasks.filter((task) => task.due_date === date)
   const spentToday = txns
@@ -272,6 +336,38 @@ function PlanningDay({ date }) {
 
   return (
     <>
+      {onBackToMonth && (
+        <p className="hub-footer month-backlink">
+          <button type="button" className="row-action-btn" onClick={onBackToMonth}>
+            ‹ Back to the month
+          </button>
+        </p>
+      )}
+
+      <div className="card intention-card">
+        <h2>Today&apos;s intention</h2>
+        <p className="list-row-sub">
+          One line. How you want the day to go, not what you&apos;ll get done.
+        </p>
+
+        <input
+          type="text"
+          className="quick-add-title intention-input"
+          value={intentionDraft}
+          onChange={(e) => {
+            setIntentionDraft(e.target.value)
+            setIntentionSaved(false)
+          }}
+          onBlur={saveIntention}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+          }}
+          placeholder="Steady and unhurried."
+        />
+
+        {intentionSaved && <p className="list-row-sub">Saved.</p>}
+      </div>
+
       <div className="card">
         <div className="project-scope-header">
           <h2>Three priorities</h2>
@@ -280,7 +376,7 @@ function PlanningDay({ date }) {
           </span>
         </div>
         <p className="list-row-sub">
-          If only these three happen, the day worked.
+          If only these three happen, the day worked. Three is the cap.
         </p>
 
         <ul className="list">
@@ -331,11 +427,11 @@ function PlanningDay({ date }) {
           </form>
         )}
 
-        {otherRows.length > 0 && (
+        {noteRows.length > 0 && (
           <>
             <h3>Also today</h3>
             <ul className="list">
-              {otherRows.map((row) => (
+              {noteRows.map((row) => (
                 <li key={row.id} className={`list-row task-row${row.done ? ' task-done' : ''}`}>
                   <div className="task-row-body">
                     <button
@@ -353,7 +449,9 @@ function PlanningDay({ date }) {
                       <button
                         type="button"
                         className="row-action-btn"
-                        onClick={() => updatePriority(row.id, { is_priority: true })}
+                        onClick={() =>
+                          updatePriority(row.id, { entry_kind: 'priority', is_priority: true })
+                        }
                       >
                         Make a priority
                       </button>

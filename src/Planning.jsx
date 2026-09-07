@@ -18,6 +18,7 @@ import { report } from './lib/report'
 
 function Planning() {
   const [horizon, setHorizon] = useState('week')
+  const [cameFromMonth, setCameFromMonth] = useState(false)
   const [anchor, setAnchor] = useState(todayISO())
 
   const [entries, setEntries] = useState([])
@@ -304,7 +305,19 @@ function Planning() {
         </button>
       </div>
 
-      {horizon === 'day' && <PlanningDay date={anchor} />}
+      {horizon === 'day' && (
+        <PlanningDay
+          date={anchor}
+          onBackToMonth={
+            cameFromMonth
+              ? () => {
+                  setHorizon('month')
+                  setCameFromMonth(false)
+                }
+              : null
+          }
+        />
+      )}
 
       {horizon === 'month' && (
         <PlanningMonth
@@ -314,6 +327,7 @@ function Planning() {
           onPickDay={(iso) => {
             setAnchor(iso)
             setHorizon('day')
+            setCameFromMonth(true)
           }}
         />
       )}

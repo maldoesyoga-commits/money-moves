@@ -3059,3 +3059,8 @@ button.segmented-tab.active:hover {
 .money.over {
   color: var(--terracotta-muted-text);
 }
+
+.month-backlink {
+  margin: 0 0 14px;
+  text-align: left;
+}
