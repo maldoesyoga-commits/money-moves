@@ -1721,3 +1721,29 @@ button.segmented-tab.active:hover {
 .food-budget .budget-gentle-note {
   margin-top: 8px;
 }
+
+.backup-module {
+  padding-bottom: 40px;
+}
+
+.backup-actions {
+  margin-top: 16px;
+}
+
+.backup-actions button {
+  flex: 0 0 auto;
+}
+
+.backup-message {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.hub-footer {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 13px;
+}

@@ -11,6 +11,7 @@ import Content from './Content'
 import Freelance from './Freelance'
 import Meals from './Meals'
 import Search from './Search'
+import Backup from './Backup'
 
 const DEFAULT_SETTINGS = {
   weekly_floor: 400,
@@ -188,6 +189,7 @@ function App() {
         <Route path="/freelance/*" element={<Freelance />} />
         <Route path="/meals/*" element={<Meals />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/backup" element={<Backup />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

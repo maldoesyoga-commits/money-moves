@@ -88,6 +88,12 @@ function HomeHub() {
           ),
         )}
       </div>
+
+      <p className="hub-footer">
+        <Link to="/backup" className="project-link">
+          Back up my data
+        </Link>
+      </p>
     </section>
   )
 }
