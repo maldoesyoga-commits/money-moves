@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
+import TaskBoard from './TaskBoard'
+import TaskCalendar from './TaskCalendar'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
 import { REPEATS, REPEAT_LABEL, REPEAT_UNIT, nextOccurrence } from './lib/recurrence'
 
@@ -15,12 +17,27 @@ const VIEWS = [
 
 const PRIORITY_LABEL = { high: 'High', med: 'Medium', low: 'Low' }
 
+const MODES = [
+  { key: 'list', label: 'List' },
+  { key: 'board', label: 'Board' },
+  { key: 'calendar', label: 'Calendar' },
+]
+
+function readMode() {
+  try {
+    return localStorage.getItem('homestead-task-view') || 'list'
+  } catch {
+    return 'list'
+  }
+}
+
 function TaskList({ onChanged }) {
   const { projectId } = useParams()
 
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
   const [view, setView] = useState('today')
+  const [mode, setMode] = useState(readMode)
   const [projectFilter, setProjectFilter] = useState('all')
   const [expandedId, setExpandedId] = useState(null)
 
@@ -66,6 +83,14 @@ function TaskList({ onChanged }) {
   useEffect(() => {
     if (projectId) setNewProjectId(projectId)
   }, [projectId])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('homestead-task-view', mode)
+    } catch {
+      // Private window — the view just won't be remembered.
+    }
+  }, [mode])
 
   const activeProject = projects.find((project) => project.id === projectId)
 
@@ -165,6 +190,27 @@ function TaskList({ onChanged }) {
     })
   }, [tasks, view, projectFilter, projectId])
 
+  // Board and calendar show everything in scope, not the date-filtered slice.
+  const scoped = tasks.filter((task) => {
+    if (projectId) return task.project_id === projectId
+    if (projectFilter === 'all') return true
+    if (projectFilter === 'none') return !task.project_id
+    return task.project_id === projectFilter
+  })
+
+  function moveStatus(task, status) {
+    updateTask(task.id, {
+      status,
+      done_at: status === 'done' ? new Date().toISOString() : null,
+    })
+  }
+
+  function openTask(task) {
+    setMode('list')
+    setView(task.status === 'done' ? 'done' : task.due_date ? 'today' : 'nodate')
+    setExpandedId(task.id)
+  }
+
   function projectName(id) {
     return projects.find((project) => project.id === id)?.name
   }
@@ -219,6 +265,20 @@ function TaskList({ onChanged }) {
         </div>
       </form>
 
+      <nav className="segmented-nav view-mode-nav">
+        {MODES.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            className={`segmented-tab${mode === option.key ? ' active' : ''}`}
+            onClick={() => setMode(option.key)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </nav>
+
+      {mode === 'list' && (
       <nav className="view-tabs">
         {VIEWS.map(({ key, label }) => (
           <button
@@ -232,6 +292,7 @@ function TaskList({ onChanged }) {
           </button>
         ))}
       </nav>
+      )}
 
       {!projectId && projects.length > 0 && (
         <div className="transaction-filter-bar">
@@ -254,7 +315,26 @@ function TaskList({ onChanged }) {
         </div>
       )}
 
-      {visible.length === 0 ? (
+      {mode === 'board' && (
+        <TaskBoard
+          tasks={scoped}
+          projectName={projectName}
+          onMove={moveStatus}
+          onOpen={openTask}
+        />
+      )}
+
+      {mode === 'calendar' && (
+        <TaskCalendar
+          tasks={scoped}
+          projectName={projectName}
+          onToggle={toggleDone}
+          onOpen={openTask}
+          onPickDate={(iso) => setDueDate(iso || '')}
+        />
+      )}
+
+      {mode === 'list' && (visible.length === 0 ? (
         tasks.length === 0 ? (
           <EmptyState icon="✅" title="No tasks yet">
             Type one in the box above. Give it a due date and it shows under Today;
@@ -389,7 +469,7 @@ function TaskList({ onChanged }) {
             )
           })}
         </ul>
-      )}
+      ))}
     </div>
   )
 }
