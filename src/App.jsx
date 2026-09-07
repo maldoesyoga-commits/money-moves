@@ -12,6 +12,7 @@ import Freelance from './Freelance'
 import Meals from './Meals'
 import Search from './Search'
 import Backup from './Backup'
+import QuickCapture from './QuickCapture'
 
 const DEFAULT_SETTINGS = {
   weekly_floor: 400,
@@ -192,6 +193,7 @@ function App() {
         <Route path="/backup" element={<Backup />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <QuickCapture />
     </div>
   )
 }

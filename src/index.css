@@ -1747,3 +1747,68 @@ button.segmented-tab.active:hover {
   text-align: center;
   font-size: 13px;
 }
+
+.capture-fab {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 12;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 400;
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(45, 50, 48, 0.22);
+  align-self: auto;
+}
+
+.capture-sheet {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  left: max(14px, env(safe-area-inset-left));
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 13;
+  max-width: 420px;
+  margin-left: auto;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(45, 50, 48, 0.2);
+}
+
+.capture-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.capture-tabs {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  margin-bottom: 12px;
+}
+
+.capture-sheet input[type='text'] {
+  width: 100%;
+}
+
+.capture-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.capture-flash {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sage);
+}
