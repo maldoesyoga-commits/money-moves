@@ -103,6 +103,19 @@ p {
   color: var(--text-soft);
 }
 
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topbar-left p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 form {
   display: flex;
   flex-direction: column;
@@ -434,7 +447,7 @@ h4 {
   font-size: 20px;
 }
 
-.app-shell-nav {
+.money-module {
   padding-bottom: 100px;
 }
 
@@ -989,6 +1002,77 @@ textarea:focus {
   font-size: 13px;
   font-style: italic;
   display: inline-block;
+}
+
+.home-hub h1 {
+  margin-bottom: 4px;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.module-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 28px 16px 20px;
+  text-decoration: none;
+  color: var(--text);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+a.module-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(45, 50, 48, 0.1);
+}
+
+.module-card-icon {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.module-card-name {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.module-card-tagline {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.module-card-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.module-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+  background: var(--border);
+  padding: 3px 8px;
+  border-radius: 999px;
 }
 
 .error-text {

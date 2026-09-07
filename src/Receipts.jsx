@@ -268,7 +268,7 @@ function Receipts() {
                     {doc.amount ? ` · ${formatMoney(doc.amount)}` : ''}
                   </span>
                   {doc.transaction_id && (
-                    <Link to="/transactions" className="document-txn-link">
+                    <Link to="/money/transactions" className="document-txn-link">
                       → {linkedTxnLabel(doc.transaction_id)}
                     </Link>
                   )}

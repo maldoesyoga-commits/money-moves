@@ -1,18 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
-import Home from './Home'
-import Insights from './Insights'
-import Income from './Income'
-import Accounts from './Accounts'
-import Savings from './Savings'
-import Debts from './Debts'
-import Transactions from './Transactions'
-import Import from './Import'
-import Receipts from './Receipts'
-import More from './More'
-import BottomNav from './BottomNav'
-import { PeriodProvider } from './PeriodContext'
+import { HomeIcon } from './icons'
+import HomeHub from './HomeHub'
+import MoneyMoves from './MoneyMoves'
 
 const DEFAULT_SETTINGS = {
   weekly_floor: 400,
@@ -165,29 +156,23 @@ function App() {
   }
 
   return (
-    <div className="app-shell app-shell-nav">
+    <div className="app-shell">
       <div className="topbar">
-        <p>Logged in as {session.user.email}</p>
+        <div className="topbar-left">
+          <Link to="/" className="icon-button" aria-label="Back to hub">
+            <HomeIcon className="bottom-nav-icon" />
+          </Link>
+          <p>Logged in as {session.user.email}</p>
+        </div>
         <button type="button" className="btn-secondary" onClick={handleLogout}>
           Log out
         </button>
       </div>
-      <PeriodProvider>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/insights" element={<Insights />} />
-          <Route path="/accounts" element={<Accounts />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/income" element={<Income />} />
-          <Route path="/savings" element={<Savings />} />
-          <Route path="/debts" element={<Debts />} />
-          <Route path="/import" element={<Import />} />
-          <Route path="/receipts" element={<Receipts />} />
-          <Route path="/more" element={<More />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </PeriodProvider>
-      <BottomNav />
+      <Routes>
+        <Route path="/" element={<HomeHub />} />
+        <Route path="/money/*" element={<MoneyMoves />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   )
 }
