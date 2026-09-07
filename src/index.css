@@ -1366,3 +1366,214 @@ button.segmented-tab.active:hover {
 .project-row .progress-track {
   width: 100%;
 }
+
+.learning-module {
+  padding-bottom: 40px;
+}
+
+.learning-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.learning-detail input[type='range'] {
+  flex: 0 0 120px;
+  accent-color: var(--sage);
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.note-form {
+  flex: 1 1 auto;
+}
+
+.note-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.note-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.note-row:first-child {
+  border-top: none;
+}
+
+.content-module {
+  padding-bottom: 40px;
+}
+
+.brand-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.brand-cm {
+  background: var(--clay);
+}
+
+.brand-hh {
+  background: var(--sage);
+}
+
+.brand-om {
+  background: var(--blue);
+}
+
+.brand-other {
+  background: var(--text-soft);
+}
+
+.stage-nudge {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.stage-nudge .row-action-btn {
+  padding: 4px 10px;
+  line-height: 1;
+}
+
+.stage-nudge .row-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.content-module textarea,
+.content-module .learning-detail input {
+  width: 100%;
+}
+
+.freelance-module {
+  padding-bottom: 40px;
+}
+
+.unbilled-hint,
+.income-nudge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--sage-soft);
+}
+
+.income-nudge {
+  margin: 16px 0 4px;
+  background: var(--clay-soft);
+}
+
+.priority-pill.status-draft {
+  background: var(--border);
+  color: var(--text-soft);
+}
+
+.priority-pill.status-sent {
+  background: var(--clay-soft);
+  color: var(--clay);
+}
+
+.priority-pill.status-paid {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.priority-pill.status-void {
+  background: var(--border);
+  color: var(--text-soft);
+  text-decoration: line-through;
+}
+
+.freelance-module textarea,
+.freelance-module .learning-detail > input {
+  width: 100%;
+}
+
+.meals-module {
+  padding-bottom: 40px;
+}
+
+.week-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.day-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.day-block h4 {
+  margin-bottom: 4px;
+}
+
+.day-block .empty-text {
+  padding: 4px 0;
+}
+
+.day-block .list {
+  margin-top: 6px;
+}
+
+.day-block .mini-form {
+  margin-top: 8px;
+}
+
+.day-block .inline-select {
+  max-width: none;
+  width: 100%;
+}
+
+.day-today {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 2px var(--sage-soft);
+}
+
+.star-button {
+  padding: 0;
+  width: 26px;
+  height: 26px;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--text-soft);
+  background: transparent;
+  border: none;
+  align-self: auto;
+  flex-shrink: 0;
+}
+
+.star-button:hover {
+  background: transparent;
+  color: var(--clay);
+}
+
+.star-button.on {
+  color: var(--clay);
+}
+
+.meals-module textarea,
+.meals-module .learning-detail > input {
+  width: 100%;
+}
