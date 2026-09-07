@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
+import { usePeriod } from './usePeriod'
+import PeriodSelector from './PeriodSelector'
 
 function effectDeltas(txn, sign) {
   const amount = (Number(txn.amount) || 0) * sign
@@ -73,6 +75,8 @@ function extensionFromFile(file) {
 }
 
 function Transactions() {
+  const { period } = usePeriod()
+
   const [transactions, setTransactions] = useState([])
   const [categories, setCategories] = useState([])
   const [debts, setDebts] = useState([])
@@ -431,14 +435,20 @@ function Transactions() {
     return ''
   }
 
-  const uncategorizedCount = transactions.filter((txn) => !txn.category_id).length
+  const periodTransactions = transactions.filter(
+    (txn) => txn.txn_date >= period.startKey && txn.txn_date <= period.endKey,
+  )
+  const uncategorizedCount = periodTransactions.filter((txn) => !txn.category_id).length
   const visibleTransactions = onlyUncategorized
-    ? transactions.filter((txn) => !txn.category_id)
-    : transactions
+    ? periodTransactions.filter((txn) => !txn.category_id)
+    : periodTransactions
 
   return (
     <div className="card">
       <h2>Transactions</h2>
+
+      <PeriodSelector />
+
       <form onSubmit={handleAdd}>
         <div className="field-row">
           <input

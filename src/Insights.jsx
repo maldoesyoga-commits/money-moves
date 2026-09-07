@@ -14,6 +14,9 @@ import {
 } from 'recharts'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
+import { usePeriod } from './usePeriod'
+import PeriodSelector from './PeriodSelector'
+import { getRecentPeriods, periodLabel, periodShortLabel } from './lib/period'
 
 const SAGE = '#3F6B5C'
 const CLAY = '#B87333'
@@ -48,13 +51,6 @@ const METHOD_COLORS = {
   cash: SAND,
 }
 
-function toDateKey(date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
 function capitalize(text) {
   if (!text) return 'Other'
   return text.charAt(0).toUpperCase() + text.slice(1)
@@ -84,6 +80,8 @@ function ChartEmpty({ height = 160 }) {
 }
 
 function Insights() {
+  const { period, statementDay } = usePeriod()
+
   const [transactions, setTransactions] = useState([])
   const [categories, setCategories] = useState([])
 
@@ -121,15 +119,12 @@ function Insights() {
     return categories.find((c) => c.id === categoryId) || null
   }
 
-  const now = new Date()
-  const monthStart = toDateKey(new Date(now.getFullYear(), now.getMonth(), 1))
-  const monthEnd = toDateKey(new Date(now.getFullYear(), now.getMonth() + 1, 0))
-  const thisMonthTxns = transactions.filter(
-    (txn) => txn.txn_date >= monthStart && txn.txn_date <= monthEnd,
+  const periodTxns = transactions.filter(
+    (txn) => txn.txn_date >= period.startKey && txn.txn_date <= period.endKey,
   )
-  const monthOutTxns = thisMonthTxns.filter((txn) => txn.direction === 'out')
+  const monthOutTxns = periodTxns.filter((txn) => txn.direction === 'out')
 
-  // Spending by category (this month)
+  // Spending by category (selected period)
   const categoryTotals = new Map()
   monthOutTxns.forEach((txn) => {
     const key = txn.category_id || 'none'
@@ -154,36 +149,28 @@ function Insights() {
     amount,
   }))
 
-  // Where money goes vs comes in (this month)
-  const moneyIn = thisMonthTxns
+  // Where money goes vs comes in (selected period)
+  const moneyIn = periodTxns
     .filter((txn) => txn.direction === 'in')
     .reduce((sum, txn) => sum + Number(txn.amount || 0), 0)
-  const moneyOut = thisMonthTxns
+  const moneyOut = periodTxns
     .filter((txn) => txn.direction === 'out')
     .reduce((sum, txn) => sum + Number(txn.amount || 0), 0)
 
-  // Spending over time (last 6 months)
-  const monthKeys = Array.from({ length: 6 }, (_, i) => {
-    const date = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
-    return {
-      key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
-      label: date.toLocaleDateString('en-US', { month: 'short' }),
-    }
+  // Spending over time (last 6 periods, ending with the selected period)
+  const recentPeriods = getRecentPeriods(period, statementDay, 6)
+  const spendingOverTime = recentPeriods.map((p) => {
+    const amount = transactions
+      .filter(
+        (txn) =>
+          txn.direction === 'out' && txn.txn_date >= p.startKey && txn.txn_date <= p.endKey,
+      )
+      .reduce((sum, txn) => sum + Number(txn.amount || 0), 0)
+    return { month: periodShortLabel(p, statementDay), amount }
   })
-  const monthlyTotals = new Map()
-  transactions
-    .filter((txn) => txn.direction === 'out')
-    .forEach((txn) => {
-      const key = (txn.txn_date || '').slice(0, 7)
-      monthlyTotals.set(key, (monthlyTotals.get(key) || 0) + Number(txn.amount || 0))
-    })
-  const spendingOverTime = monthKeys.map(({ key, label }) => ({
-    month: label,
-    amount: monthlyTotals.get(key) || 0,
-  }))
   const hasSpendingHistory = spendingOverTime.some((entry) => entry.amount > 0)
 
-  // How it's sent (this month, out-transactions with a method)
+  // How it's sent (selected period, out-transactions with a method)
   const methodTotals = new Map()
   monthOutTxns
     .filter((txn) => txn.method)
@@ -201,9 +188,11 @@ function Insights() {
     <section className="insights">
       <h1>Insights</h1>
 
+      <PeriodSelector />
+
       <div className="card">
         <h2>Spending by category</h2>
-        <p className="list-row-sub">This month</p>
+        <p className="list-row-sub">{periodLabel(period, statementDay)}</p>
         <div className="chart-body">
           {categoryData.length > 0 ? (
             <ResponsiveContainer width="100%" height={Math.max(160, categoryData.length * 42)}>
@@ -240,7 +229,7 @@ function Insights() {
 
       <div className="card">
         <h2>Need / Want / Future</h2>
-        <p className="list-row-sub">This month's spending</p>
+        <p className="list-row-sub">{periodLabel(period, statementDay)}</p>
         <div className="chart-body">
           {bucketData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -276,7 +265,7 @@ function Insights() {
 
       <div className="card">
         <h2>Where money goes vs comes in</h2>
-        <p className="list-row-sub">This month</p>
+        <p className="list-row-sub">{periodLabel(period, statementDay)}</p>
         <div className="chart-body">
           {moneyIn > 0 || moneyOut > 0 ? (
             <div className="flow-summary">
@@ -297,7 +286,7 @@ function Insights() {
 
       <div className="card">
         <h2>Spending over time</h2>
-        <p className="list-row-sub">Last 6 months</p>
+        <p className="list-row-sub">Last 6 periods</p>
         <div className="chart-body">
           {hasSpendingHistory ? (
             <ResponsiveContainer width="100%" height={220}>
@@ -328,7 +317,7 @@ function Insights() {
 
       <div className="card">
         <h2>How it's sent</h2>
-        <p className="list-row-sub">This month</p>
+        <p className="list-row-sub">{periodLabel(period, statementDay)}</p>
         <div className="chart-body">
           {methodData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>

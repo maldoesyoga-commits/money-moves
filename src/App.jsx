@@ -12,6 +12,7 @@ import Import from './Import'
 import Receipts from './Receipts'
 import More from './More'
 import BottomNav from './BottomNav'
+import { PeriodProvider } from './PeriodContext'
 
 const DEFAULT_SETTINGS = {
   weekly_floor: 400,
@@ -171,19 +172,21 @@ function App() {
           Log out
         </button>
       </div>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/insights" element={<Insights />} />
-        <Route path="/accounts" element={<Accounts />} />
-        <Route path="/transactions" element={<Transactions />} />
-        <Route path="/income" element={<Income />} />
-        <Route path="/savings" element={<Savings />} />
-        <Route path="/debts" element={<Debts />} />
-        <Route path="/import" element={<Import />} />
-        <Route path="/receipts" element={<Receipts />} />
-        <Route path="/more" element={<More />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <PeriodProvider>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/insights" element={<Insights />} />
+          <Route path="/accounts" element={<Accounts />} />
+          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/income" element={<Income />} />
+          <Route path="/savings" element={<Savings />} />
+          <Route path="/debts" element={<Debts />} />
+          <Route path="/import" element={<Import />} />
+          <Route path="/receipts" element={<Receipts />} />
+          <Route path="/more" element={<More />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </PeriodProvider>
       <BottomNav />
     </div>
   )
