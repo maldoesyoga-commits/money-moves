@@ -64,7 +64,7 @@ function HomeHub() {
   return (
     <section className="home-hub">
       <div className="home-greeting">
-        <h1>Your hub</h1>
+        <h1>Homestead</h1>
         <p className="list-row-sub">Pick a module to get started.</p>
       </div>
 
