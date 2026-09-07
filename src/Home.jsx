@@ -12,6 +12,7 @@ import { formatMoney } from './lib/format'
 import { usePeriod } from './usePeriod'
 import PeriodSelector from './PeriodSelector'
 import { getRecentPeriods, periodLabel, periodShortLabel } from './lib/period'
+import { isSpendingTxn } from './lib/spending'
 
 const SAGE = '#3F6B5C'
 const CLAY = '#B87333'
@@ -143,6 +144,26 @@ function Home() {
 
   const latestTransactions = periodTransactions.slice(0, 5)
 
+  const budgets = categories
+    .filter((category) => category.monthly_target != null && Number(category.monthly_target) > 0)
+    .map((category) => {
+      const target = Number(category.monthly_target)
+      const spent = periodTransactions
+        .filter((txn) => txn.category_id === category.id && isSpendingTxn(txn))
+        .reduce((sum, txn) => sum + Number(txn.amount || 0), 0)
+      const isOver = spent > target
+      return {
+        id: category.id,
+        name: category.name,
+        spent,
+        target,
+        isOver,
+        overBy: spent - target,
+        widthPct: Math.min(100, (spent / target) * 100),
+      }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name))
+
   const now = new Date()
   const todayLabel = now.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -224,6 +245,40 @@ function Home() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      <div className="card">
+        <h2>Budgets</h2>
+        <p className="list-row-sub">{periodLabel(period, statementDay)}</p>
+        {budgets.length > 0 ? (
+          <div className="budget-list">
+            {budgets.map((budget) => (
+              <div key={budget.id}>
+                <div className="budget-row-header">
+                  <span className="list-row-title">{budget.name}</span>
+                  <span className="list-row-sub">
+                    {formatMoney(budget.spent)} of {formatMoney(budget.target)}
+                  </span>
+                </div>
+                <div className="progress-track">
+                  <div
+                    className={`progress-fill${budget.isOver ? ' progress-fill-over' : ''}`}
+                    style={{ width: `${budget.widthPct}%` }}
+                  />
+                </div>
+                {budget.isOver && (
+                  <p className="budget-gentle-note">
+                    {formatMoney(budget.overBy)} over this month — that's okay.
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-text">
+            No budget targets set yet. Add one under More → Manage categories.
+          </p>
+        )}
       </div>
 
       <div className="card">

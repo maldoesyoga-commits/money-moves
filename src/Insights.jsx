@@ -17,6 +17,7 @@ import { formatMoney } from './lib/format'
 import { usePeriod } from './usePeriod'
 import PeriodSelector from './PeriodSelector'
 import { getRecentPeriods, periodLabel, periodShortLabel } from './lib/period'
+import { isSpendingTxn } from './lib/spending'
 
 const SAGE = '#3F6B5C'
 const CLAY = '#B87333'
@@ -54,13 +55,6 @@ const METHOD_COLORS = {
 function capitalize(text) {
   if (!text) return 'Other'
   return text.charAt(0).toUpperCase() + text.slice(1)
-}
-
-// Spending excludes transfers (direction is 'transfer', never 'out') and
-// out-transactions linked to a debt payment (debt_id set) - those move money
-// or pay down debt, they don't reflect discretionary spending.
-function isSpendingTxn(txn) {
-  return txn.direction === 'out' && !txn.debt_id
 }
 
 function paletteColor(index) {

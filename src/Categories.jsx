@@ -33,6 +33,7 @@ function groupByCategoryGroup(list) {
 function Categories() {
   const [categories, setCategories] = useState([])
   const [showArchived, setShowArchived] = useState(false)
+  const [targetDrafts, setTargetDrafts] = useState({})
 
   const [name, setName] = useState('')
   const [categoryGroup, setCategoryGroup] = useState('')
@@ -126,6 +127,31 @@ function Categories() {
       .from('categories')
       .update({ value_tag: newValueTag })
       .eq('id', id)
+
+    if (error) {
+      console.log(error.message)
+      return
+    }
+
+    loadCategories()
+  }
+
+  async function handleTargetBlur(category) {
+    const draft = targetDrafts[category.id]
+    if (draft === undefined) return
+
+    const trimmed = draft.trim()
+    const newValue = trimmed === '' ? null : Number(trimmed)
+
+    if (newValue !== null && (Number.isNaN(newValue) || newValue < 0)) return
+
+    const currentValue = category.monthly_target != null ? Number(category.monthly_target) : null
+    if (newValue === currentValue) return
+
+    const { error } = await supabase
+      .from('categories')
+      .update({ monthly_target: newValue })
+      .eq('id', category.id)
 
     if (error) {
       console.log(error.message)
@@ -243,6 +269,22 @@ function Categories() {
                         <span className="list-row-sub">{capitalize(category.bucket)}</span>
                       </div>
                       <div className="subscription-actions">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className="target-input"
+                          placeholder="No target"
+                          aria-label="Monthly target"
+                          value={
+                            targetDrafts[category.id] ??
+                            (category.monthly_target != null ? String(category.monthly_target) : '')
+                          }
+                          onChange={(e) =>
+                            setTargetDrafts((prev) => ({ ...prev, [category.id]: e.target.value }))
+                          }
+                          onBlur={() => handleTargetBlur(category)}
+                        />
                         <select
                           className="inline-select"
                           value={VALUE_TAGS.includes(category.value_tag) ? category.value_tag : 'unrated'}
