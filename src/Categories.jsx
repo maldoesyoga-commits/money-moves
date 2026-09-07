@@ -6,6 +6,15 @@ function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
+const VALUE_TAGS = ['worth', 'review', 'regret', 'unrated']
+
+const VALUE_TAG_LABELS = {
+  worth: 'Worth it',
+  review: 'Review',
+  regret: 'Regret',
+  unrated: 'Unrated',
+}
+
 function groupByCategoryGroup(list) {
   const groups = new Map()
   for (const category of list) {
@@ -107,6 +116,22 @@ function Categories() {
     }
 
     if (editingId === id) setEditingId(null)
+    loadCategories()
+  }
+
+  async function handleValueTagChange(id, newValueTag) {
+    if (!VALUE_TAGS.includes(newValueTag)) return
+
+    const { error } = await supabase
+      .from('categories')
+      .update({ value_tag: newValueTag })
+      .eq('id', id)
+
+    if (error) {
+      console.log(error.message)
+      return
+    }
+
     loadCategories()
   }
 
@@ -215,12 +240,21 @@ function Categories() {
                     <>
                       <div className="list-row-main">
                         <span className="list-row-title">{category.name}</span>
-                        <span className="list-row-sub">
-                          {capitalize(category.bucket)}
-                          {category.value_tag ? ` · ${category.value_tag}` : ''}
-                        </span>
+                        <span className="list-row-sub">{capitalize(category.bucket)}</span>
                       </div>
                       <div className="subscription-actions">
+                        <select
+                          className="inline-select"
+                          value={VALUE_TAGS.includes(category.value_tag) ? category.value_tag : 'unrated'}
+                          onChange={(e) => handleValueTagChange(category.id, e.target.value)}
+                          aria-label="Value rating"
+                        >
+                          {VALUE_TAGS.map((tag) => (
+                            <option key={tag} value={tag}>
+                              {VALUE_TAG_LABELS[tag]}
+                            </option>
+                          ))}
+                        </select>
                         <button
                           type="button"
                           className="icon-button"
