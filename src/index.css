@@ -3167,3 +3167,154 @@ button.segmented-tab.active:hover {
 .week-tag.brand-other {
   background: var(--text-soft);
 }
+
+/* ---------- Quarter planner ---------- */
+
+.quarter-weeks {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  margin: 16px 0 8px;
+}
+
+.quarter-week {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  align-self: auto;
+  min-width: 0;
+}
+
+.quarter-week:hover {
+  background: transparent;
+}
+
+.quarter-week-bar {
+  position: relative;
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.quarter-week-fill {
+  width: 100%;
+  background: var(--border);
+  transition: height 0.2s ease;
+}
+
+.quarter-week-bar.score-good .quarter-week-fill {
+  background: var(--sage);
+}
+
+.quarter-week-bar.score-ok .quarter-week-fill {
+  background: var(--clay);
+}
+
+.quarter-week-bar.score-low .quarter-week-fill {
+  background: var(--terracotta-muted);
+}
+
+.quarter-week.future {
+  opacity: 0.4;
+}
+
+.quarter-week.now .quarter-week-bar {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 1px var(--sage);
+}
+
+.quarter-week.now .quarter-week-no {
+  color: var(--sage);
+  font-weight: 700;
+}
+
+.quarter-week-no {
+  font-size: 10px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.quarter-week.buffer .quarter-week-bar {
+  border-style: dashed;
+}
+
+.buffer-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--border),
+    var(--border) 3px,
+    transparent 3px,
+    transparent 6px
+  );
+}
+
+.quarter-months {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.quarter-month {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 14px 16px;
+  text-align: left;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  align-self: auto;
+  color: var(--text);
+}
+
+.quarter-month:hover {
+  border-color: var(--sage);
+  background: var(--sage-soft);
+  color: var(--text);
+}
+
+.quarter-month.now {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 1px var(--sage);
+}
+
+.quarter-month-name {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.quarter-month-stat {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.quarter-month-stat.owed {
+  color: var(--clay);
+  font-weight: 600;
+}
+
+.money.score-good {
+  color: var(--sage);
+}
+
+.money.score-ok {
+  color: var(--clay);
+}
+
+.money.score-low {
+  color: var(--terracotta-muted-text);
+}

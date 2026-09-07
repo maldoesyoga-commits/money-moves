@@ -15,6 +15,7 @@ import CyclePanel from './CyclePanel'
 import PlanningDay from './PlanningDay'
 import PlanningMonth from './PlanningMonth'
 import PlanningWeek from './PlanningWeek'
+import PlanningQuarter from './PlanningQuarter'
 import { report } from './lib/report'
 
 function Planning() {
@@ -336,8 +337,22 @@ function Planning() {
         />
       )}
 
-      {(horizon === 'week' || horizon === 'quarter') && (
-        <CyclePanel horizon={horizon} start={start} end={end} />
+      {horizon === 'week' && <CyclePanel horizon={horizon} start={start} end={end} />}
+
+      {horizon === 'quarter' && (
+        <PlanningQuarter
+          anchor={anchor}
+          start={start}
+          end={end}
+          onPickWeek={(iso) => {
+            setAnchor(iso)
+            setHorizon('week')
+          }}
+          onPickMonth={(iso) => {
+            setAnchor(iso)
+            setHorizon('month')
+          }}
+        />
       )}
 
       {horizon === 'week' && (
@@ -352,7 +367,7 @@ function Planning() {
         />
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && (
+      {horizon === 'year' && (
       <div className="card">
         <h2>Plan</h2>
         <p className="list-row-sub">What this {horizon} is for.</p>
@@ -404,7 +419,7 @@ function Planning() {
 
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && (
+      {horizon === 'year' && (
       <div className="card">
         <div className="project-scope-header">
           <h2>Tasks due</h2>
@@ -444,7 +459,7 @@ function Planning() {
 
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && (
+      {horizon === 'year' && (
       <div className="card">
         <h2>Goals landing here</h2>
 
@@ -504,7 +519,7 @@ function Planning() {
 
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && otherGoals.length > 0 && (
+      {horizon === 'year' && otherGoals.length > 0 && (
         <div className="card">
           <div className="project-scope-header">
             <h2>Other goals</h2>
@@ -537,7 +552,7 @@ function Planning() {
         </div>
       )}
 
-      {horizon !== 'day' && horizon !== 'month' && horizon !== 'week' && (
+      {horizon === 'year' && (
       <div className="card">
         <div className="project-scope-header">
           <h2>Savings goals</h2>
