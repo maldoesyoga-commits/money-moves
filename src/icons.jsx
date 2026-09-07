@@ -93,6 +93,16 @@ export function ImportIcon({ className }) {
   )
 }
 
+export function ReceiptsIcon({ className }) {
+  return (
+    <Icon className={className}>
+      <path d="M6 3.5h9l3 3v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z" />
+      <path d="M15 3.5v3h3" />
+      <path d="M8 12h8M8 15.5h8M8 8.5h5" />
+    </Icon>
+  )
+}
+
 export function MoreIcon({ className }) {
   return (
     <Icon className={className}>

@@ -834,6 +834,66 @@ textarea:focus {
   background: var(--clay-soft);
 }
 
+.receipt-thumb-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.receipt-thumb-link {
+  display: block;
+  line-height: 0;
+}
+
+.receipt-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.receipts-page h1 {
+  margin-bottom: 4px;
+}
+
+.document-row {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+}
+
+.document-preview {
+  flex-shrink: 0;
+  width: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.document-file-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sage);
+  text-align: center;
+}
+
+.document-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.document-txn-link {
+  font-size: 13px;
+  color: var(--sage);
+  font-weight: 600;
+}
+
+.document-delete {
+  flex-shrink: 0;
+}
+
 .error-text {
   color: var(--clay);
   font-size: 14px;

@@ -64,6 +64,14 @@ function directionLabel(direction) {
   return 'Out'
 }
 
+function extensionFromFile(file) {
+  const nameParts = file.name.split('.')
+  if (nameParts.length > 1) return nameParts.pop().toLowerCase()
+  if (file.type === 'image/png') return 'png'
+  if (file.type === 'image/webp') return 'webp'
+  return 'jpg'
+}
+
 function Transactions() {
   const [transactions, setTransactions] = useState([])
   const [categories, setCategories] = useState([])
@@ -79,6 +87,9 @@ function Transactions() {
 
   const [onlyUncategorized, setOnlyUncategorized] = useState(false)
   const [flashId, setFlashId] = useState(null)
+
+  const [receiptsByTxn, setReceiptsByTxn] = useState({})
+  const [uploadingReceiptId, setUploadingReceiptId] = useState(null)
 
   const [editingId, setEditingId] = useState(null)
   const [editDate, setEditDate] = useState('')
@@ -263,6 +274,77 @@ function Transactions() {
     setEditDirection(txn.direction || 'out')
     setEditFromAccountId(txn.from_account_id || '')
     setEditToAccountId(txn.to_account_id || '')
+    loadReceiptsForTxn(txn.id)
+  }
+
+  async function loadReceiptsForTxn(txnId) {
+    const { data, error } = await supabase.from('documents').select('*').eq('transaction_id', txnId)
+
+    if (error) {
+      console.error('Failed to load receipts', error)
+      return
+    }
+
+    const withUrls = await Promise.all(
+      (data || []).map(async (doc) => {
+        const { data: signed, error: signError } = await supabase.storage
+          .from('receipts')
+          .createSignedUrl(doc.storage_path, 3600)
+
+        if (signError) {
+          console.error('Failed to create signed URL', signError)
+          return { ...doc, url: null }
+        }
+
+        return { ...doc, url: signed.signedUrl }
+      }),
+    )
+
+    setReceiptsByTxn((prev) => ({ ...prev, [txnId]: withUrls }))
+  }
+
+  async function handleAddReceipt(txn, file) {
+    if (!file) return
+
+    setUploadingReceiptId(txn.id)
+
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !userData?.user) {
+      console.log(userError ? userError.message : 'No authenticated user')
+      setUploadingReceiptId(null)
+      return
+    }
+
+    const ext = extensionFromFile(file)
+    const path = `${userData.user.id}/${crypto.randomUUID()}.${ext}`
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('receipts')
+      .upload(path, file)
+
+    if (uploadError) {
+      console.log(uploadError.message)
+      setUploadingReceiptId(null)
+      return
+    }
+
+    const { error: insertError } = await supabase.from('documents').insert({
+      kind: 'receipt',
+      storage_path: uploadData.path,
+      transaction_id: txn.id,
+      doc_date: txn.txn_date,
+      amount: txn.amount,
+    })
+
+    if (insertError) {
+      console.log(insertError.message)
+      setUploadingReceiptId(null)
+      return
+    }
+
+    await loadReceiptsForTxn(txn.id)
+    setUploadingReceiptId(null)
   }
 
   function cancelEdit() {
@@ -499,6 +581,43 @@ function Transactions() {
                     ))}
                   </select>
                 </div>
+                <label>
+                  Add receipt
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      handleAddReceipt(txn, file)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+                {uploadingReceiptId === txn.id && (
+                  <p className="list-row-sub">Uploading…</p>
+                )}
+                {receiptsByTxn[txn.id]?.length > 0 && (
+                  <div className="receipt-thumb-row">
+                    {receiptsByTxn[txn.id].map((doc) =>
+                      doc.url ? (
+                        <a
+                          key={doc.id}
+                          href={doc.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="receipt-thumb-link"
+                        >
+                          <img src={doc.url} alt="Receipt" className="receipt-thumb" />
+                        </a>
+                      ) : (
+                        <span key={doc.id} className="list-row-sub">
+                          Preview unavailable
+                        </span>
+                      ),
+                    )}
+                  </div>
+                )}
                 <div className="field-row">
                   <button type="submit">Save</button>
                   <button type="button" className="btn-secondary" onClick={cancelEdit}>

@@ -1,6 +1,5 @@
 import Subscriptions from './Subscriptions'
 import Categories from './Categories'
-import Receipts from './Receipts'
 
 function More() {
   return (
@@ -8,7 +7,6 @@ function More() {
       <h1>More</h1>
       <Subscriptions />
       <Categories />
-      <Receipts />
     </section>
   )
 }
