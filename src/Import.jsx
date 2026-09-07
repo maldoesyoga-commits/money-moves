@@ -12,14 +12,21 @@ function buildRows(candidates) {
     amount: candidate.amount.toFixed(2),
     category_id: '',
     direction: candidate.direction || 'out',
+    from_account_id: '',
+    to_account_id: '',
     included: true,
   }))
+}
+
+function isInvalidTransferRow(row) {
+  return row.direction === 'transfer' && (!row.from_account_id || !row.to_account_id)
 }
 
 const LEGACY_PIPE_PREFIX = /^\|\s*\|\s*(in|out)\s*\|\s*/i
 
 function Import() {
   const [categories, setCategories] = useState([])
+  const [accounts, setAccounts] = useState([])
   const [rows, setRows] = useState([])
   const [pasteText, setPasteText] = useState('')
   const [pipeText, setPipeText] = useState('')
@@ -28,6 +35,7 @@ function Import() {
   const [fileError, setFileError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [savedCount, setSavedCount] = useState(null)
+  const [skippedCount, setSkippedCount] = useState(null)
   const [cleaningUp, setCleaningUp] = useState(false)
   const [cleanedCount, setCleanedCount] = useState(null)
 
@@ -45,8 +53,20 @@ function Import() {
     setCategories(data)
   }
 
+  async function loadAccounts() {
+    const { data, error } = await supabase.from('accounts').select('*').order('sort_order')
+
+    if (error) {
+      console.error('Failed to load accounts', error)
+      return
+    }
+
+    setAccounts(data)
+  }
+
   useEffect(() => {
     loadCategories()
+    loadAccounts()
   }, [])
 
   async function handleFileChange(e) {
@@ -97,11 +117,19 @@ function Import() {
   }
 
   async function handleSaveSelected() {
-    const rowsToInsert = rows
+    const includedValidRows = rows
       .filter((row) => row.included)
       .filter((row) => row.amount !== '' && Number(row.amount) > 0)
 
-    if (rowsToInsert.length === 0) return
+    const rowsToInsert = includedValidRows.filter((row) => !isInvalidTransferRow(row))
+    const skipped = includedValidRows.length - rowsToInsert.length
+
+    setSkippedCount(skipped)
+
+    if (rowsToInsert.length === 0) {
+      setSavedCount(skipped > 0 ? 0 : null)
+      return
+    }
 
     setSaving(true)
     setSavedCount(null)
@@ -111,6 +139,8 @@ function Import() {
       amount: Number(row.amount),
       category_id: row.category_id || null,
       direction: row.direction,
+      from_account_id: row.from_account_id || null,
+      to_account_id: row.to_account_id || null,
       note: row.description,
     }))
 
@@ -248,7 +278,8 @@ function Import() {
         <div className="card">
           <h2>Review transactions</h2>
           <p className="list-row-sub">
-            Check the rows you want to import, fix anything that looks off, then save.
+            Check the rows you want to import, fix anything that looks off, then save. Transfer
+            rows need both a from and a to account.
           </p>
 
           <div className="table-scroll">
@@ -261,11 +292,16 @@ function Import() {
                   <th>Amount</th>
                   <th>Category</th>
                   <th>Direction</th>
+                  <th>From</th>
+                  <th>To</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id} className={row.included ? '' : 'row-excluded'}>
+                  <tr
+                    key={row.id}
+                    className={`${row.included ? '' : 'row-excluded'}${isInvalidTransferRow(row) ? ' row-invalid' : ''}`}
+                  >
                     <td>
                       <input
                         type="checkbox"
@@ -324,7 +360,42 @@ function Import() {
                         >
                           In
                         </button>
+                        <button
+                          type="button"
+                          className={`direction-btn direction-transfer${row.direction === 'transfer' ? ' active' : ''}`}
+                          onClick={() => updateRow(row.id, 'direction', 'transfer')}
+                        >
+                          Transfer
+                        </button>
                       </div>
+                    </td>
+                    <td>
+                      <select
+                        className="inline-select"
+                        value={row.from_account_id}
+                        onChange={(e) => updateRow(row.id, 'from_account_id', e.target.value)}
+                      >
+                        <option value="">—</option>
+                        {accounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="inline-select"
+                        value={row.to_account_id}
+                        onChange={(e) => updateRow(row.id, 'to_account_id', e.target.value)}
+                      >
+                        <option value="">—</option>
+                        {accounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.name}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   </tr>
                 ))}
@@ -344,6 +415,12 @@ function Import() {
           {savedCount !== null && (
             <p className="list-row-sub">
               Saved {savedCount} transaction{savedCount === 1 ? '' : 's'}.
+            </p>
+          )}
+          {skippedCount > 0 && (
+            <p className="error-text">
+              Skipped {skippedCount} transfer row{skippedCount === 1 ? '' : 's'} missing a from or
+              to account.
             </p>
           )}
         </div>

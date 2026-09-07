@@ -725,6 +725,15 @@ textarea:focus {
   color: var(--sage);
 }
 
+.direction-btn.direction-transfer.active {
+  background: rgba(78, 110, 138, 0.14);
+  color: var(--blue);
+}
+
+.row-invalid {
+  background: var(--clay-soft);
+}
+
 .import-save-bar {
   display: flex;
   align-items: center;
@@ -930,6 +939,16 @@ textarea:focus {
 
 .period-today-link:hover {
   text-decoration: underline;
+}
+
+.debt-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
 }
 
 .error-text {

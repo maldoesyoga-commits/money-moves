@@ -88,6 +88,7 @@ function Transactions() {
   const [direction, setDirection] = useState('out')
   const [fromAccountId, setFromAccountId] = useState('')
   const [toAccountId, setToAccountId] = useState('')
+  const [addError, setAddError] = useState(null)
 
   const [onlyUncategorized, setOnlyUncategorized] = useState(false)
   const [flashId, setFlashId] = useState(null)
@@ -103,6 +104,8 @@ function Transactions() {
   const [editDirection, setEditDirection] = useState('out')
   const [editFromAccountId, setEditFromAccountId] = useState('')
   const [editToAccountId, setEditToAccountId] = useState('')
+  const [editError, setEditError] = useState(null)
+  const [quickDebtId, setQuickDebtId] = useState('')
 
   async function loadTransactions() {
     const { data, error } = await supabase
@@ -173,6 +176,12 @@ function Transactions() {
 
   async function handleAdd(e) {
     e.preventDefault()
+    setAddError(null)
+
+    if (direction === 'transfer' && (!fromAccountId || !toAccountId)) {
+      setAddError('Transfers need both a from account and a to account.')
+      return
+    }
 
     const payload = {
       amount: Number(amount),
@@ -278,6 +287,8 @@ function Transactions() {
     setEditDirection(txn.direction || 'out')
     setEditFromAccountId(txn.from_account_id || '')
     setEditToAccountId(txn.to_account_id || '')
+    setEditError(null)
+    setQuickDebtId('')
     loadReceiptsForTxn(txn.id)
   }
 
@@ -353,10 +364,18 @@ function Transactions() {
 
   function cancelEdit() {
     setEditingId(null)
+    setEditError(null)
+    setQuickDebtId('')
   }
 
   async function handleSaveEdit(e, id) {
     e.preventDefault()
+    setEditError(null)
+
+    if (editDirection === 'transfer' && (!editFromAccountId || !editToAccountId)) {
+      setEditError('Transfers need both a from account and a to account.')
+      return
+    }
 
     const { data: oldTxn, error: fetchError } = await supabase
       .from('transactions')
@@ -391,6 +410,87 @@ function Transactions() {
     }
 
     setEditingId(null)
+    loadTransactions()
+  }
+
+  async function handleMarkAsDebtPayment(txn, debtIdToUse) {
+    if (!debtIdToUse) return
+
+    const { data: oldTxn, error: fetchError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('id', txn.id)
+      .single()
+
+    if (fetchError) {
+      console.log(fetchError.message)
+      return
+    }
+
+    const newTxn = { ...oldTxn, direction: 'out', debt_id: debtIdToUse }
+
+    const deltaMap = mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1))
+    const balancesOk = await applyBalanceDeltas(deltaMap)
+    if (!balancesOk) return
+
+    const { error: updateError } = await supabase
+      .from('transactions')
+      .update({ direction: 'out', debt_id: debtIdToUse })
+      .eq('id', txn.id)
+
+    if (updateError) {
+      console.log(updateError.message)
+      return
+    }
+
+    setEditingId(null)
+    setQuickDebtId('')
+    loadTransactions()
+  }
+
+  async function handleMarkAsBorrowed(txn, debtIdToUse) {
+    if (!debtIdToUse) return
+
+    const { data: oldTxn, error: fetchError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('id', txn.id)
+      .single()
+
+    if (fetchError) {
+      console.log(fetchError.message)
+      return
+    }
+
+    const newTxn = { ...oldTxn, direction: 'in', debt_id: debtIdToUse }
+
+    const deltaMap = mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1))
+    const balancesOk = await applyBalanceDeltas(deltaMap)
+    if (!balancesOk) return
+
+    const { error: updateError } = await supabase
+      .from('transactions')
+      .update({ direction: 'in', debt_id: debtIdToUse })
+      .eq('id', txn.id)
+
+    if (updateError) {
+      console.log(updateError.message)
+      return
+    }
+
+    const { error: entryError } = await supabase.from('debt_entries').insert({
+      debt_id: debtIdToUse,
+      amount: Number(oldTxn.amount) || 0,
+      direction: 'draw',
+    })
+
+    if (entryError) {
+      console.log(entryError.message)
+      return
+    }
+
+    setEditingId(null)
+    setQuickDebtId('')
     loadTransactions()
   }
 
@@ -473,7 +573,11 @@ function Transactions() {
           </select>
         </div>
         <div className="field-row">
-          <select value={fromAccountId} onChange={(e) => setFromAccountId(e.target.value)}>
+          <select
+            value={fromAccountId}
+            onChange={(e) => setFromAccountId(e.target.value)}
+            required={direction === 'transfer'}
+          >
             <option value="">From account —</option>
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
@@ -481,7 +585,11 @@ function Transactions() {
               </option>
             ))}
           </select>
-          <select value={toAccountId} onChange={(e) => setToAccountId(e.target.value)}>
+          <select
+            value={toAccountId}
+            onChange={(e) => setToAccountId(e.target.value)}
+            required={direction === 'transfer'}
+          >
             <option value="">To account —</option>
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
@@ -490,6 +598,9 @@ function Transactions() {
             ))}
           </select>
         </div>
+        {direction === 'transfer' && (
+          <p className="list-row-sub">Transfers need both a from account and a to account.</p>
+        )}
         <label>
           Debt payment toward (optional)
           <select value={debtId} onChange={(e) => setDebtId(e.target.value)}>
@@ -501,6 +612,7 @@ function Transactions() {
             ))}
           </select>
         </label>
+        {addError && <p className="error-text">{addError}</p>}
         <button type="submit">Add</button>
       </form>
 
@@ -561,6 +673,7 @@ function Transactions() {
                   <select
                     value={editFromAccountId}
                     onChange={(e) => setEditFromAccountId(e.target.value)}
+                    required={editDirection === 'transfer'}
                   >
                     <option value="">From account —</option>
                     {accounts.map((account) => (
@@ -572,6 +685,7 @@ function Transactions() {
                   <select
                     value={editToAccountId}
                     onChange={(e) => setEditToAccountId(e.target.value)}
+                    required={editDirection === 'transfer'}
                   >
                     <option value="">To account —</option>
                     {accounts.map((account) => (
@@ -581,6 +695,11 @@ function Transactions() {
                     ))}
                   </select>
                 </div>
+                {editDirection === 'transfer' && (
+                  <p className="list-row-sub">
+                    Transfers need both a from account and a to account.
+                  </p>
+                )}
                 <div className="field-row">
                   <select value={editDebtId} onChange={(e) => setEditDebtId(e.target.value)}>
                     <option value="">No linked debt</option>
@@ -591,6 +710,41 @@ function Transactions() {
                     ))}
                   </select>
                 </div>
+
+                {debts.length > 0 && (
+                  <div className="debt-quick-actions">
+                    <label>
+                      Debt quick action
+                      <select value={quickDebtId} onChange={(e) => setQuickDebtId(e.target.value)}>
+                        <option value="">Choose a debt —</option>
+                        {debts.map((debt) => (
+                          <option key={debt.id} value={debt.id}>
+                            {debt.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="field-row">
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        disabled={!quickDebtId}
+                        onClick={() => handleMarkAsDebtPayment(txn, quickDebtId)}
+                      >
+                        This is a payment to a debt
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        disabled={!quickDebtId}
+                        onClick={() => handleMarkAsBorrowed(txn, quickDebtId)}
+                      >
+                        This is money borrowed
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <label>
                   Add receipt
                   <input
@@ -628,6 +782,7 @@ function Transactions() {
                     )}
                   </div>
                 )}
+                {editError && <p className="error-text">{editError}</p>}
                 <div className="field-row">
                   <button type="submit">Save</button>
                   <button type="button" className="btn-secondary" onClick={cancelEdit}>

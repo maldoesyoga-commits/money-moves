@@ -56,6 +56,13 @@ function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
+// Spending excludes transfers (direction is 'transfer', never 'out') and
+// out-transactions linked to a debt payment (debt_id set) - those move money
+// or pay down debt, they don't reflect discretionary spending.
+function isSpendingTxn(txn) {
+  return txn.direction === 'out' && !txn.debt_id
+}
+
 function paletteColor(index) {
   return EARTH_PALETTE[index % EARTH_PALETTE.length]
 }
@@ -122,7 +129,7 @@ function Insights() {
   const periodTxns = transactions.filter(
     (txn) => txn.txn_date >= period.startKey && txn.txn_date <= period.endKey,
   )
-  const monthOutTxns = periodTxns.filter((txn) => txn.direction === 'out')
+  const monthOutTxns = periodTxns.filter(isSpendingTxn)
 
   // Spending by category (selected period)
   const categoryTotals = new Map()
@@ -153,18 +160,13 @@ function Insights() {
   const moneyIn = periodTxns
     .filter((txn) => txn.direction === 'in')
     .reduce((sum, txn) => sum + Number(txn.amount || 0), 0)
-  const moneyOut = periodTxns
-    .filter((txn) => txn.direction === 'out')
-    .reduce((sum, txn) => sum + Number(txn.amount || 0), 0)
+  const moneyOut = periodTxns.filter(isSpendingTxn).reduce((sum, txn) => sum + Number(txn.amount || 0), 0)
 
   // Spending over time (last 6 periods, ending with the selected period)
   const recentPeriods = getRecentPeriods(period, statementDay, 6)
   const spendingOverTime = recentPeriods.map((p) => {
     const amount = transactions
-      .filter(
-        (txn) =>
-          txn.direction === 'out' && txn.txn_date >= p.startKey && txn.txn_date <= p.endKey,
-      )
+      .filter((txn) => isSpendingTxn(txn) && txn.txn_date >= p.startKey && txn.txn_date <= p.endKey)
       .reduce((sum, txn) => sum + Number(txn.amount || 0), 0)
     return { month: periodShortLabel(p, statementDay), amount }
   })
