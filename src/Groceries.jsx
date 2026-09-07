@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
+import FoodBudget from './FoodBudget'
 
 const AISLES = [
   { value: 'produce', label: 'Produce' },
@@ -115,6 +116,8 @@ function Groceries() {
         </p>
         {estimate > 0 && <span className="money">≈ {formatMoney(estimate)}</span>}
       </div>
+
+      <FoodBudget estimate={estimate} />
 
       <form className="quick-add" onSubmit={handleAdd}>
         <input

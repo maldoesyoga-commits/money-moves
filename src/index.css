@@ -1684,3 +1684,40 @@ button.segmented-tab.active:hover {
     min-width: 0;
   }
 }
+
+.food-budget {
+  margin: 4px 0 18px;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.food-budget .progress-track {
+  display: flex;
+}
+
+.food-budget .progress-fill {
+  border-radius: 999px 0 0 999px;
+}
+
+.progress-fill-estimate {
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--clay-soft),
+    var(--clay-soft) 4px,
+    var(--terracotta-muted-soft) 4px,
+    var(--terracotta-muted-soft) 8px
+  );
+  border-right: 1px solid var(--terracotta-muted);
+  transition: width 0.2s ease;
+}
+
+.food-budget .list-row-sub {
+  margin-top: 6px;
+}
+
+.food-budget .budget-gentle-note {
+  margin-top: 8px;
+}
