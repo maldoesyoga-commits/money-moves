@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { HomeIcon } from './icons'
 import HomeHub from './HomeHub'
 import MoneyMoves from './MoneyMoves'
+import Tasks from './Tasks'
 
 const DEFAULT_SETTINGS = {
   weekly_floor: 400,
@@ -171,6 +172,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomeHub />} />
         <Route path="/money/*" element={<MoneyMoves />} />
+        <Route path="/tasks/*" element={<Tasks />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

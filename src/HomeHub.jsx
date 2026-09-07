@@ -14,7 +14,8 @@ const MODULES = [
     icon: '✅',
     name: 'Tasks & Projects',
     tagline: 'Plan and track your to-dos',
-    enabled: false,
+    path: '/tasks',
+    enabled: true,
   },
   {
     key: 'planning',
