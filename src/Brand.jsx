@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, NavLink } from 'react-router-dom'
 import { BrandProvider } from './BrandContext'
 import { useBrand } from './useBrand'
+import BrandHome from './BrandHome'
 import BrandKit from './BrandKit'
 import Strategy from './Strategy'
 import Hashtags from './Hashtags'
@@ -12,7 +13,8 @@ import BrandInsights from './BrandInsights'
 import StabilityStudio from './StabilityStudio'
 
 const TABS = [
-  { to: '/brand', label: 'Brand Kit', end: true },
+  { to: '/brand', label: 'Overview', end: true },
+  { to: '/brand/kit', label: 'Brand Kit' },
   { to: '/brand/strategy', label: 'Strategy' },
   { to: '/brand/moodboard', label: 'Mood Board' },
   { to: '/brand/calendar', label: 'Calendar' },
@@ -90,7 +92,8 @@ function BrandInner() {
       )}
 
       <Routes>
-        <Route path="/" element={<BrandKit />} />
+        <Route path="/" element={<BrandHome />} />
+        <Route path="kit" element={<BrandKit />} />
         <Route path="strategy" element={<Strategy />} />
         <Route path="moodboard" element={<MoodBoard />} />
         <Route path="calendar" element={<Calendar />} />
