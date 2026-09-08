@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { report } from './lib/report'
 import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
+import NoteAttachments from './NoteAttachments'
 
 // A notebook: contents down the side, the open note filling the page.
 function Notebook() {
@@ -204,6 +205,8 @@ function Notebook() {
                 onChange={(e) => handleBody(e.target.value)}
                 placeholder="Write."
               />
+
+              <NoteAttachments noteId={open.id} />
 
               <div className="page-foot">
                 <span className="list-row-sub">

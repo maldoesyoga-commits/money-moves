@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
+import NoteAttachments from './NoteAttachments'
 import { report } from './lib/report'
 
 const CATEGORIES = [
@@ -289,6 +290,7 @@ function NoteList() {
                       </button>
                       <TagPicker table="notes" id={note.id} />
                     </div>
+                    <NoteAttachments noteId={note.id} />
                   </div>
                 )}
               </li>
