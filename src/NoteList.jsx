@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
-import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
-import NoteAttachments from './NoteAttachments'
 import { report } from './lib/report'
 
 const CATEGORIES = [
@@ -15,18 +14,14 @@ const CATEGORIES = [
 const VIEWS = [{ key: 'all', label: 'All' }, ...CATEGORIES.map((c) => ({ key: c.value, label: c.label }))]
 
 function NoteList() {
+  const navigate = useNavigate()
+
   const [notes, setNotes] = useState([])
-  const [projects, setProjects] = useState([])
-  const [notebooks, setNotebooks] = useState([])
   const [view, setView] = useState('all')
   const [search, setSearch] = useState('')
-  const [openId, setOpenId] = useState(null)
-  const [drafts, setDrafts] = useState({})
 
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('note')
-
-  const timers = useRef({})
 
   const loadNotes = useCallback(async () => {
     const { data, error } = await supabase
@@ -43,38 +38,11 @@ function NoteList() {
     setNotes(data)
   }, [])
 
-  const loadNotebooks = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('notebooks')
-      .select('id, title')
-      .eq('archived', false)
-      .order('title')
-
-    if (error) {
-      report('Failed to load notebooks', error)
-      return
-    }
-
-    setNotebooks(data)
-  }, [])
-
-  const loadProjects = useCallback(async () => {
-    const { data, error } = await supabase.from('projects').select('id, name').order('name')
-
-    if (error) {
-      report('Failed to load projects', error)
-      return
-    }
-
-    setProjects(data)
-  }, [])
-
   useEffect(() => {
     loadNotes()
-    loadProjects()
-    loadNotebooks()
-  }, [loadNotes, loadProjects, loadNotebooks])
+  }, [loadNotes])
 
+  // A new note opens straight onto its own page, ready to build out.
   async function handleAdd(e) {
     e.preventDefault()
 
@@ -93,39 +61,19 @@ function NoteList() {
     }
 
     setTitle('')
-    setOpenId(data.id)
-    loadNotes()
+    navigate(`/notes/note/${data.id}`)
   }
 
-  async function updateNote(id, patch) {
-    setNotes((prev) => prev.map((note) => (note.id === id ? { ...note, ...patch } : note)))
+  async function togglePin(note) {
+    setNotes((prev) => prev.map((n) => (n.id === note.id ? { ...n, pinned: !n.pinned } : n)))
 
     const { error } = await supabase
       .from('notes')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .update({ pinned: !note.pinned, updated_at: new Date().toISOString() })
+      .eq('id', note.id)
 
     if (error) {
       report('Failed to update note', error)
-      loadNotes()
-    }
-  }
-
-  // Body edits debounce so a long note isn't a write per keystroke.
-  function handleBody(id, value) {
-    setDrafts((prev) => ({ ...prev, [id]: value }))
-
-    clearTimeout(timers.current[id])
-    timers.current[id] = setTimeout(() => updateNote(id, { body: value }), 600)
-  }
-
-  async function deleteNote(id) {
-    setNotes((prev) => prev.filter((note) => note.id !== id))
-
-    const { error } = await supabase.from('notes').delete().eq('id', id)
-
-    if (error) {
-      report('Failed to delete note', error)
       loadNotes()
     }
   }
@@ -196,8 +144,6 @@ function NoteList() {
       ) : (
         <ul className="list">
           {visible.map((note) => {
-            const open = openId === note.id
-            const body = drafts[note.id] ?? note.body ?? ''
             const preview = (note.body || '').split('\n')[0].slice(0, 90)
 
             return (
@@ -206,93 +152,25 @@ function NoteList() {
                   <button
                     type="button"
                     className={`star-button${note.pinned ? ' on' : ''}`}
-                    onClick={() => updateNote(note.id, { pinned: !note.pinned })}
+                    onClick={() => togglePin(note)}
                     aria-label={note.pinned ? 'Unpin' : 'Pin'}
                   >
                     {note.pinned ? '📌' : '📍'}
                   </button>
-                  <div className="list-row-main task-main">
+                  <Link
+                    to={`/notes/note/${note.id}`}
+                    className="list-row-main task-main client-card-link"
+                  >
                     <span className="list-row-title">{note.title || 'Untitled'}</span>
                     <span className="list-row-sub task-meta">
                       <span className="priority-pill">{note.category}</span>
                       {preview && <span>{preview}</span>}
                     </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="row-action-btn"
-                    onClick={() => setOpenId(open ? null : note.id)}
-                  >
-                    {open ? 'Close' : 'Open'}
-                  </button>
+                  </Link>
+                  <Link to={`/notes/note/${note.id}`} className="row-action-btn">
+                    Open →
+                  </Link>
                 </div>
-
-                {open && (
-                  <div className="learning-detail">
-                    <input
-                      type="text"
-                      value={note.title || ''}
-                      placeholder="title"
-                      onChange={(e) => updateNote(note.id, { title: e.target.value })}
-                    />
-                    <textarea
-                      rows="8"
-                      value={body}
-                      placeholder="Write it all out here."
-                      onChange={(e) => handleBody(note.id, e.target.value)}
-                    />
-                    <div className="task-controls">
-                      <select
-                        className="inline-select"
-                        value={note.category}
-                        onChange={(e) => updateNote(note.id, { category: e.target.value })}
-                      >
-                        {CATEGORIES.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className="inline-select"
-                        value={note.notebook_id || ''}
-                        onChange={(e) =>
-                          updateNote(note.id, { notebook_id: e.target.value || null })
-                        }
-                      >
-                        <option value="">No notebook</option>
-                        {notebooks.map((book) => (
-                          <option key={book.id} value={book.id}>
-                            {book.title}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className="inline-select"
-                        value={note.project_id || ''}
-                        onChange={(e) =>
-                          updateNote(note.id, { project_id: e.target.value || null })
-                        }
-                      >
-                        <option value="">No project</option>
-                        {projects.map((project) => (
-                          <option key={project.id} value={project.id}>
-                            {project.name}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="row-action-btn row-action-btn-danger"
-                        onClick={() => deleteNote(note.id)}
-                      >
-                        Delete
-                      </button>
-                      <TagPicker table="notes" id={note.id} />
-                    </div>
-                    <NoteAttachments noteId={note.id} />
-                  </div>
-                )}
               </li>
             )
           })}

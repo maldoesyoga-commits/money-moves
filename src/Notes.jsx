@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, NavLink } from 'react-router-dom'
 import NoteList from './NoteList'
 import Notebooks from './Notebooks'
 import Notebook from './Notebook'
+import NoteDetail from './NoteDetail'
 import Journal from './Journal'
 
 const TABS = [
@@ -35,6 +36,7 @@ function Notes() {
         <Route path="/" element={<Notebooks />} />
         <Route path="book/:notebookId" element={<Notebook />} />
         <Route path="all" element={<NoteList />} />
+        <Route path="note/:noteId" element={<NoteDetail />} />
         <Route path="journal" element={<Journal />} />
         <Route path="*" element={<Navigate to="/notes" replace />} />
       </Routes>
