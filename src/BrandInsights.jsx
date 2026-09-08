@@ -272,6 +272,32 @@ function Performance() {
   const [title, setTitle] = useState('')
   const [platform, setPlatform] = useState('instagram')
   const [postedOn, setPostedOn] = useState(todayISO())
+  const [sourceId, setSourceId] = useState('')
+  const [sources, setSources] = useState([])
+
+  const loadSources = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('content_items')
+      .select('id, title, platform, publish_date, posted_at, link')
+      .eq('brand', brand)
+      .order('publish_date', { nullsFirst: false })
+    if (!error && data) setSources(data)
+  }, [brand])
+
+  useEffect(() => {
+    loadSources()
+  }, [loadSources])
+
+  function pickSource(id) {
+    setSourceId(id)
+    if (!id) return
+    const item = sources.find((s) => s.id === id)
+    if (!item) return
+    setTitle(item.title || '')
+    if (item.platform) setPlatform(item.platform)
+    const when = item.posted_at ? item.posted_at.slice(0, 10) : item.publish_date
+    if (when) setPostedOn(when)
+  }
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -303,6 +329,11 @@ function Performance() {
 
     const payload = { brand, title: trimmed, platform, sort_order: entries.length }
     if (postedOn) payload.posted_on = postedOn
+    if (sourceId) {
+      payload.content_item_id = sourceId
+      const item = sources.find((s) => s.id === sourceId)
+      if (item && item.link) payload.link = item.link
+    }
 
     const { error } = await supabase.from('performance_log').insert(payload)
     if (error) {
@@ -310,6 +341,7 @@ function Performance() {
       return
     }
     setTitle('')
+    setSourceId('')
     load()
   }
 
@@ -380,6 +412,20 @@ function Performance() {
 
       <div className="card">
         <form className="quick-add" onSubmit={handleAdd}>
+          {sources.length > 0 && (
+            <select
+              className="perf-source-select"
+              value={sourceId}
+              onChange={(e) => pickSource(e.target.value)}
+            >
+              <option value="">Link a post from Content (optional)…</option>
+              {sources.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          )}
           <input
             type="text"
             className="quick-add-title"
@@ -437,6 +483,7 @@ function Performance() {
                       <span className="list-row-sub task-meta">
                         {entry.posted_on && <span>{formatDate(entry.posted_on)}</span>}
                         {entry.platform && <span>{PLATFORM_LABEL[entry.platform] || entry.platform}</span>}
+                        {entry.content_item_id && <span className="priority-pill">↳ Content</span>}
                       </span>
                       {chips.length > 0 && (
                         <span className="metric-chips">

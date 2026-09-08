@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate, NavLink } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom'
 import { BrandProvider } from './BrandContext'
 import { useBrand } from './useBrand'
 import BrandHome from './BrandHome'
@@ -57,6 +58,14 @@ function BrandInner() {
   // Stability Studio runs for Creating Mal only.
   const tabs = TABS.filter((tab) => tab.to !== '/brand/studio' || brand === 'cm')
 
+  // Keep the active tab scrolled into view on the horizontal tab strip.
+  const navRef = useRef(null)
+  const location = useLocation()
+  useEffect(() => {
+    const active = navRef.current?.querySelector('.brand-tab.active')
+    if (active) active.scrollIntoView({ inline: 'center', block: 'nearest' })
+  }, [location.pathname])
+
   return (
     <section className="brand-module" style={brandStyle}>
       <div className="home-greeting">
@@ -68,7 +77,7 @@ function BrandInner() {
 
       <BrandSwitcher />
 
-      <nav className="brand-tabs">
+      <nav className="brand-tabs" ref={navRef}>
         {tabs.map(({ to, label, end }) => (
           <NavLink
             key={to}

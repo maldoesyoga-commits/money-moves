@@ -54,13 +54,22 @@ function pad(n) {
   return String(n).padStart(2, '0')
 }
 
-function ContentCard({ item, compact, onSelect }) {
+function ContentCard({ item, compact, onSelect, draggable }) {
   const overdue = item.stage !== 'posted' && item.publish_date && item.publish_date < todayISO()
   return (
-    <button
-      type="button"
-      className={`content-card${compact ? ' compact' : ''}`}
+    <div
+      className={`content-card${compact ? ' compact' : ''}${draggable ? ' draggable' : ''}`}
+      role="button"
+      tabIndex={0}
+      draggable={draggable || undefined}
+      onDragStart={draggable ? (e) => e.dataTransfer.setData('text/plain', item.id) : undefined}
       onClick={() => onSelect(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect(item)
+        }
+      }}
     >
       <span className={`stage-flag stage-${item.stage}`} />
       <span className="content-card-main">
@@ -75,11 +84,11 @@ function ContentCard({ item, compact, onSelect }) {
           {item.format && <span className="priority-pill">{FORMAT_LABEL[item.format] || item.format}</span>}
         </span>
       </span>
-    </button>
+    </div>
   )
 }
 
-function ContentDetail({ item, onClose }) {
+function ContentDetail({ item, onClose, onUpdate }) {
   useEffect(() => {
     function onKey(e) {
       if (e.key === 'Escape') onClose()
@@ -108,8 +117,33 @@ function ContentDetail({ item, onClose }) {
         <div className="modal-meta">
           {item.publish_date && <span>{formatDueDate(item.publish_date)}</span>}
           {item.platform && <span>{PLATFORM_LABEL[item.platform] || item.platform}</span>}
-          {item.format && <span className="priority-pill">{FORMAT_LABEL[item.format] || item.format}</span>}
-          <span className="priority-pill">{STAGE_LABEL[item.stage] || item.stage}</span>
+        </div>
+
+        <div className="modal-fields">
+          <label>
+            Stage
+            <select value={item.stage} onChange={(e) => onUpdate(item.id, { stage: e.target.value })}>
+              {STAGES.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Format
+            <select
+              value={item.format || ''}
+              onChange={(e) => onUpdate(item.id, { format: e.target.value || null })}
+            >
+              <option value="">No format</option>
+              {FORMATS.map((f) => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {item.hook && <p className="modal-hook">“{item.hook}”</p>}
@@ -130,11 +164,29 @@ function ContentDetail({ item, onClose }) {
   )
 }
 
-function Kanban({ columns, onSelect }) {
+function Kanban({ columns, dimension, onSelect, onMove }) {
+  const [overKey, setOverKey] = useState(null)
+
   return (
     <div className="kanban">
       {columns.map((col) => (
-        <div className="kanban-col" key={col.key}>
+        <div
+          className={`kanban-col${overKey === col.key ? ' drag-over' : ''}`}
+          key={col.key}
+          onDragOver={(e) => {
+            e.preventDefault()
+            if (overKey !== col.key) setOverKey(col.key)
+          }}
+          onDragLeave={(e) => {
+            if (e.currentTarget === e.target) setOverKey((k) => (k === col.key ? null : k))
+          }}
+          onDrop={(e) => {
+            e.preventDefault()
+            setOverKey(null)
+            const id = e.dataTransfer.getData('text/plain')
+            if (id) onMove(id, dimension, col.key)
+          }}
+        >
           <div className="kanban-col-header">
             <span>{col.label}</span>
             <span className="tag-count">{col.items.length}</span>
@@ -144,7 +196,7 @@ function Kanban({ columns, onSelect }) {
               <p className="kanban-empty">—</p>
             ) : (
               col.items.map((item) => (
-                <ContentCard key={item.id} item={item} onSelect={onSelect} compact />
+                <ContentCard key={item.id} item={item} onSelect={onSelect} compact draggable />
               ))
             )}
           </div>
@@ -381,6 +433,39 @@ function Calendar() {
     load()
   }, [load])
 
+  const updateItem = useCallback(
+    async (id, patch) => {
+      let finalPatch = patch
+      if ('stage' in patch) {
+        const current = items.find((item) => item.id === id)
+        finalPatch = { ...patch }
+        if (patch.stage === 'posted') {
+          finalPatch.posted_at = (current && current.posted_at) || new Date().toISOString()
+        } else {
+          finalPatch.posted_at = null
+        }
+      }
+
+      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...finalPatch } : item)))
+      setSelectedItem((prev) => (prev && prev.id === id ? { ...prev, ...finalPatch } : prev))
+
+      const { error } = await supabase.from('content_items').update(finalPatch).eq('id', id)
+      if (error) {
+        console.log('Failed to update content item', error.message)
+        load()
+      }
+    },
+    [items, load],
+  )
+
+  function handleMove(id, dimension, columnKey) {
+    if (dimension === 'stage') {
+      updateItem(id, { stage: columnKey })
+    } else if (dimension === 'format') {
+      updateItem(id, { format: columnKey === 'unset' ? null : columnKey })
+    }
+  }
+
   const typeColumns = useMemo(() => {
     return FORMATS.map((f) => ({
       key: f.value,
@@ -388,11 +473,7 @@ function Calendar() {
       items: items.filter((item) => (item.format || 'other') === f.value),
     }))
       .filter((col) => col.items.length > 0)
-      .concat(
-        items.some((item) => !item.format)
-          ? [{ key: 'unset', label: 'No format', items: items.filter((item) => !item.format) }]
-          : [],
-      )
+      .concat([{ key: 'unset', label: 'No format', items: items.filter((item) => !item.format) }])
   }, [items])
 
   const statusColumns = useMemo(() => {
@@ -403,13 +484,16 @@ function Calendar() {
     }))
   }, [items])
 
+  const boardView = view === 'type' || view === 'status'
+
   return (
     <div className="brand-tab-body">
       <div className="card brand-help-card">
         <span className="brand-kit-eyebrow">Content calendar</span>
         <p className="brand-help-text">
-          A brand-filtered view of your content pipeline. Tap any card to see the details.
-          Add and edit items in the{' '}
+          A brand-filtered view of your content pipeline. Tap any card to see the details
+          {boardView ? ', or drag a card to another column to move it' : ''}. Add and edit
+          items in the{' '}
           <Link to="/content" className="project-link">
             Content module
           </Link>
@@ -442,17 +526,25 @@ function Calendar() {
           {view === 'calendar' && <MonthCalendar items={items} onSelect={setSelectedItem} />}
           {view === 'list' && <MonthList items={items} onSelect={setSelectedItem} />}
           {view === 'type' && (
-            typeColumns.length === 0 ? (
-              <p className="empty-text">Nothing to board yet.</p>
-            ) : (
-              <Kanban columns={typeColumns} onSelect={setSelectedItem} />
-            )
+            <Kanban
+              columns={typeColumns.filter((c) => c.items.length > 0 || c.key === 'unset')}
+              dimension="format"
+              onSelect={setSelectedItem}
+              onMove={handleMove}
+            />
           )}
-          {view === 'status' && <Kanban columns={statusColumns} onSelect={setSelectedItem} />}
+          {view === 'status' && (
+            <Kanban
+              columns={statusColumns}
+              dimension="stage"
+              onSelect={setSelectedItem}
+              onMove={handleMove}
+            />
+          )}
         </>
       )}
 
-      <ContentDetail item={selectedItem} onClose={() => setSelectedItem(null)} />
+      <ContentDetail item={selectedItem} onClose={() => setSelectedItem(null)} onUpdate={updateItem} />
     </div>
   )
 }
