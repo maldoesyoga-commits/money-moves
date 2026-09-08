@@ -5,6 +5,7 @@ import { report } from './lib/report'
 import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
 import NoteAttachments from './NoteAttachments'
+import RelatedPages from './RelatedPages'
 
 // A notebook: contents down the side, the open note filling the page.
 function Notebook() {
@@ -135,6 +136,20 @@ function Notebook() {
 
   return (
     <>
+      <p className="list-row-sub note-breadcrumb">
+        <Link to="/notes" className="project-link">
+          Notes
+        </Link>
+        {' › '}
+        <span>{notebook.title}</span>
+        {open && (
+          <>
+            {' › '}
+            <span>{open.title || 'Untitled'}</span>
+          </>
+        )}
+      </p>
+
       <div className="card" style={{ borderLeft: `4px solid ${notebook.color || 'var(--sage)'}` }}>
         <div className="project-scope-header">
           <div>
@@ -207,6 +222,8 @@ function Notebook() {
               />
 
               <NoteAttachments noteId={open.id} />
+
+              <RelatedPages noteId={open.id} pages={notes} onOpen={setOpenId} />
 
               <div className="page-foot">
                 <span className="list-row-sub">
