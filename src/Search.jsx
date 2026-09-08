@@ -97,9 +97,17 @@ const SOURCES = [
     table: 'notes',
     columns: ['title', 'body'],
     group: 'Notes',
-    to: () => '/notes',
+    to: (row) => (row.notebook_id ? `/notes/book/${row.notebook_id}` : '/notes/all'),
     title: (row) => row.title || 'Untitled note',
     sub: (row) => row.category,
+  },
+  {
+    table: 'notebooks',
+    columns: ['title', 'description', 'area'],
+    group: 'Notebooks',
+    to: (row) => `/notes/book/${row.id}`,
+    title: (row) => row.title,
+    sub: (row) => row.area || 'notebook',
   },
   {
     table: 'journal_entries',

@@ -1,29 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
-import { todayISO, formatDueDate } from './lib/taskDates'
-import EmptyState from './EmptyState'
 import { report } from './lib/report'
+import { todayISO } from './lib/taskDates'
+import { shiftDate } from './lib/daily'
 
-const MOODS = [
-  { value: 'rough', label: 'Rough' },
-  { value: 'low', label: 'Low' },
-  { value: 'steady', label: 'Steady' },
-  { value: 'good', label: 'Good' },
-  { value: 'great', label: 'Great' },
-]
+function longDate(iso) {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
 
+// A quiet room. No prompts unless you go looking for them.
 function Journal() {
-  const [entries, setEntries] = useState([])
   const [date, setDate] = useState(todayISO())
+  const [entry, setEntry] = useState(null)
   const [body, setBody] = useState('')
-  const [gratitude, setGratitude] = useState('')
-  const [mood, setMood] = useState('')
-  const [entryId, setEntryId] = useState(null)
   const [savedAt, setSavedAt] = useState(null)
+  const [entries, setEntries] = useState([])
+  const [showShelf, setShowShelf] = useState(false)
   const [openId, setOpenId] = useState(null)
 
   const timer = useRef(null)
-  const loadedFor = useRef(null)
 
   const loadEntries = useCallback(async () => {
     const { data, error } = await supabase
@@ -32,7 +33,7 @@ function Journal() {
       .order('entry_date', { ascending: false })
 
     if (error) {
-      report('Failed to load journal', error)
+      report('Failed to load the journal', error)
       return
     }
 
@@ -43,217 +44,234 @@ function Journal() {
     loadEntries()
   }, [loadEntries])
 
-  // Switching date loads that day's entry into the writing box.
+  // Load whichever day is on the desk.
   useEffect(() => {
-    if (loadedFor.current === date) return
-
-    const existing = entries.find((entry) => entry.entry_date === date)
-    loadedFor.current = date
-    setEntryId(existing?.id || null)
-    setBody(existing?.body || '')
-    setGratitude(existing?.gratitude || '')
-    setMood(existing?.mood || '')
+    const found = entries.find((row) => row.entry_date === date) || null
+    setEntry(found)
+    setBody(found?.body || '')
     setSavedAt(null)
   }, [date, entries])
 
   const save = useCallback(
-    async (patch) => {
-      const payload = { entry_date: date, body, gratitude: gratitude || null, mood: mood || null, ...patch }
+    async (value) => {
+      const text = value ?? body
 
-      if (!payload.body.trim() && !payload.gratitude && !payload.mood) return
+      if (!text.trim() && !entry) return
 
-      if (entryId) {
+      if (entry) {
         const { error } = await supabase
           .from('journal_entries')
-          .update({ ...payload, updated_at: new Date().toISOString() })
-          .eq('id', entryId)
+          .update({ body: text, updated_at: new Date().toISOString() })
+          .eq('id', entry.id)
 
         if (error) {
-          report('Failed to save journal entry', error)
-          return
-        }
-      } else {
-        const { data, error } = await supabase
-          .from('journal_entries')
-          .insert(payload)
-          .select()
-          .single()
-
-        if (error) {
-          report('Failed to create journal entry', error)
+          report('Failed to save the entry', error)
           return
         }
 
-        setEntryId(data.id)
+        setSavedAt(new Date())
+        return
       }
 
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .insert({ entry_date: date, body: text })
+        .select()
+        .single()
+
+      if (error) {
+        report('Failed to save the entry', error)
+        return
+      }
+
+      setEntry(data)
       setSavedAt(new Date())
       loadEntries()
     },
-    [date, body, gratitude, mood, entryId, loadEntries],
+    [body, date, entry, loadEntries],
   )
 
   function handleBody(value) {
     setBody(value)
     clearTimeout(timer.current)
-    timer.current = setTimeout(() => save({ body: value }), 800)
+    timer.current = setTimeout(() => save(value), 900)
   }
 
   async function deleteEntry(id) {
-    setEntries((prev) => prev.filter((entry) => entry.id !== id))
+    setEntries((prev) => prev.filter((row) => row.id !== id))
 
     const { error } = await supabase.from('journal_entries').delete().eq('id', id)
 
     if (error) {
-      report('Failed to delete entry', error)
+      report('Failed to delete the entry', error)
       loadEntries()
       return
     }
 
-    if (id === entryId) {
-      setEntryId(null)
+    if (entry?.id === id) {
+      setEntry(null)
       setBody('')
-      setGratitude('')
-      setMood('')
     }
   }
 
-  const past = entries.filter((entry) => entry.entry_date !== date)
+  const written = new Set(entries.map((row) => row.entry_date))
   const streak = (() => {
-    const dates = new Set(entries.map((entry) => entry.entry_date))
+    let cursor = todayISO()
     let count = 0
-    const cursor = new Date(`${todayISO()}T12:00:00`)
-
-    while (dates.has(cursor.toISOString().slice(0, 10)) && count < 999) {
+    if (!written.has(cursor)) cursor = shiftDate(cursor, -1)
+    while (written.has(cursor) && count < 999) {
       count += 1
-      cursor.setDate(cursor.getDate() - 1)
+      cursor = shiftDate(cursor, -1)
     }
-
     return count
   })()
 
-  return (
-    <>
-      <div className="card">
-        <div className="project-scope-header">
-          <h2>{date === todayISO() ? 'Today' : formatDueDate(date)}</h2>
-          <input
-            type="date"
-            className="inline-select"
-            value={date}
-            max={todayISO()}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
+  const words = body.trim() ? body.trim().split(/\s+/).length : 0
+  const past = entries.filter((row) => row.entry_date !== date)
 
-        {streak > 1 && (
-          <p className="list-row-sub">
-            {streak} days in a row.
-          </p>
-        )}
+  return (
+    <div className="journal">
+      <div className="journal-paper">
+        <div className="journal-head">
+          <button
+            type="button"
+            className="journal-arrow"
+            onClick={() => setDate(shiftDate(date, -1))}
+            aria-label="The day before"
+          >
+            ‹
+          </button>
+
+          <div className="journal-date">
+            <span className="journal-dear">Dear diary,</span>
+            <span className="journal-day">{longDate(date)}</span>
+          </div>
+
+          <button
+            type="button"
+            className="journal-arrow"
+            onClick={() => setDate(shiftDate(date, 1))}
+            disabled={date >= todayISO()}
+            aria-label="The day after"
+          >
+            ›
+          </button>
+        </div>
 
         <textarea
-          className="journal-box"
-          rows="10"
+          className="journal-write"
           value={body}
           onChange={(e) => handleBody(e.target.value)}
-          placeholder="How did today go?"
+          onBlur={() => save()}
+          placeholder="…"
+          spellCheck="true"
         />
 
-        <div className="field-row journal-extras">
-          <input
-            type="text"
-            value={gratitude}
-            onChange={(e) => setGratitude(e.target.value)}
-            onBlur={() => save({ gratitude: gratitude || null })}
-            placeholder="one good thing"
-          />
-          <select
-            value={mood}
-            onChange={(e) => {
-              setMood(e.target.value)
-              save({ mood: e.target.value || null })
-            }}
-          >
-            <option value="">Mood</option>
-            {MOODS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        <div className="journal-foot">
+          <span>
+            {savedAt
+              ? `Saved ${savedAt.toLocaleTimeString(undefined, {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })}`
+              : body
+                ? 'Saving as you write'
+                : ''}
+          </span>
+          <span>
+            {words > 0 && `${words} ${words === 1 ? 'word' : 'words'}`}
+            {streak > 1 && ` · ${streak} days running`}
+          </span>
         </div>
-
-        <p className="list-row-sub">
-          {savedAt
-            ? `Saved ${savedAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
-            : 'Saves as you write.'}
-        </p>
       </div>
 
-      <div className="card">
-        <h2>Earlier</h2>
-
-        {past.length === 0 ? (
-          <EmptyState icon="📔" title="Nothing written yet">
-            Private to you — same row-level security as everything else here. Write a
-            line or a page, whatever the day was.
-          </EmptyState>
-        ) : (
-          <ul className="list">
-            {past.map((entry) => {
-              const open = openId === entry.id
-
-              return (
-                <li key={entry.id} className="list-row project-row">
-                  <div className="task-row-body">
-                    <div className="list-row-main task-main">
-                      <span className="list-row-title">{formatDueDate(entry.entry_date)}</span>
-                      <span className="list-row-sub task-meta">
-                        {entry.mood && <span className="priority-pill">{entry.mood}</span>}
-                        <span>{(entry.body || '').slice(0, 80)}</span>
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      className="row-action-btn"
-                      onClick={() => setOpenId(open ? null : entry.id)}
-                    >
-                      {open ? 'Close' : 'Read'}
-                    </button>
-                  </div>
-
-                  {open && (
-                    <div className="learning-detail">
-                      <p className="journal-read">{entry.body}</p>
-                      {entry.gratitude && (
-                        <p className="list-row-sub">Good thing: {entry.gratitude}</p>
-                      )}
-                      <div className="task-controls">
-                        <button
-                          type="button"
-                          className="row-action-btn"
-                          onClick={() => setDate(entry.entry_date)}
-                        >
-                          Edit this day
-                        </button>
-                        <button
-                          type="button"
-                          className="row-action-btn row-action-btn-danger"
-                          onClick={() => deleteEntry(entry.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
+      <div className="journal-tools">
+        {date !== todayISO() && (
+          <button type="button" className="row-action-btn" onClick={() => setDate(todayISO())}>
+            Back to today
+          </button>
         )}
+        <input
+          type="date"
+          className="inline-select"
+          value={date}
+          max={todayISO()}
+          onChange={(e) => setDate(e.target.value)}
+        />
+        <Link to="/planning" className="row-action-btn">
+          The day&apos;s plan
+        </Link>
+        <button
+          type="button"
+          className="row-action-btn"
+          onClick={() => setShowShelf((open) => !open)}
+        >
+          {showShelf ? 'Close the shelf' : `Earlier · ${past.length}`}
+        </button>
       </div>
-    </>
+
+      {showShelf && (
+        <div className="card journal-shelf">
+          {past.length === 0 ? (
+            <p className="empty-text">Nothing written yet.</p>
+          ) : (
+            <ul className="list">
+              {past.map((row) => {
+                const isOpen = openId === row.id
+
+                return (
+                  <li key={row.id} className="list-row project-row">
+                    <div className="task-row-body">
+                      <div className="list-row-main task-main">
+                        <button
+                          type="button"
+                          className="shelf-date"
+                          onClick={() => setDate(row.entry_date)}
+                        >
+                          {longDate(row.entry_date)}
+                        </button>
+                        <span className="list-row-sub">
+                          {(row.body || '').trim().slice(0, 90) || 'empty'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="row-action-btn"
+                        onClick={() => setOpenId(isOpen ? null : row.id)}
+                      >
+                        {isOpen ? 'Close' : 'Read'}
+                      </button>
+                    </div>
+
+                    {isOpen && (
+                      <div className="learning-detail">
+                        <p className="journal-read">{row.body}</p>
+                        <div className="task-controls">
+                          <button
+                            type="button"
+                            className="row-action-btn"
+                            onClick={() => setDate(row.entry_date)}
+                          >
+                            Open this day
+                          </button>
+                          <button
+                            type="button"
+                            className="row-action-btn row-action-btn-danger"
+                            onClick={() => deleteEntry(row.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 

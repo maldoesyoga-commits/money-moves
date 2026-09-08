@@ -45,6 +45,7 @@ const TABLES = [
   'time_blocks',
   'focus_sessions',
   'category_budgets',
+  'notebooks',
 ]
 
 function download(filename, text, type) {

@@ -67,6 +67,14 @@ const MODULES = [
     enabled: true,
   },
   {
+    key: 'brand',
+    icon: '🎨',
+    name: 'Brand',
+    tagline: 'Strategy, kit, and brand HQ',
+    path: '/brand',
+    enabled: true,
+  },
+  {
     key: 'freelance',
     icon: '💼',
     name: 'Freelance',

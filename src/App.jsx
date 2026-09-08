@@ -9,6 +9,7 @@ import Tasks from './Tasks'
 import Planning from './Planning'
 import Learning from './Learning'
 import Content from './Content'
+import Brand from './Brand'
 import Freelance from './Freelance'
 import Meals from './Meals'
 import Search from './Search'
@@ -202,6 +203,7 @@ function App() {
         <Route path="/planning" element={<Planning />} />
         <Route path="/learning" element={<Learning />} />
         <Route path="/content" element={<Content />} />
+        <Route path="/brand/*" element={<Brand />} />
         <Route path="/freelance/*" element={<Freelance />} />
         <Route path="/meals/*" element={<Meals />} />
         <Route path="/search" element={<Search />} />

@@ -16,6 +16,7 @@ const VIEWS = [{ key: 'all', label: 'All' }, ...CATEGORIES.map((c) => ({ key: c.
 function NoteList() {
   const [notes, setNotes] = useState([])
   const [projects, setProjects] = useState([])
+  const [notebooks, setNotebooks] = useState([])
   const [view, setView] = useState('all')
   const [search, setSearch] = useState('')
   const [openId, setOpenId] = useState(null)
@@ -41,6 +42,21 @@ function NoteList() {
     setNotes(data)
   }, [])
 
+  const loadNotebooks = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('notebooks')
+      .select('id, title')
+      .eq('archived', false)
+      .order('title')
+
+    if (error) {
+      report('Failed to load notebooks', error)
+      return
+    }
+
+    setNotebooks(data)
+  }, [])
+
   const loadProjects = useCallback(async () => {
     const { data, error } = await supabase.from('projects').select('id, name').order('name')
 
@@ -55,7 +71,8 @@ function NoteList() {
   useEffect(() => {
     loadNotes()
     loadProjects()
-  }, [loadNotes, loadProjects])
+    loadNotebooks()
+  }, [loadNotes, loadProjects, loadNotebooks])
 
   async function handleAdd(e) {
     e.preventDefault()
@@ -232,6 +249,20 @@ function NoteList() {
                         {CATEGORIES.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        className="inline-select"
+                        value={note.notebook_id || ''}
+                        onChange={(e) =>
+                          updateNote(note.id, { notebook_id: e.target.value || null })
+                        }
+                      >
+                        <option value="">No notebook</option>
+                        {notebooks.map((book) => (
+                          <option key={book.id} value={book.id}>
+                            {book.title}
                           </option>
                         ))}
                       </select>

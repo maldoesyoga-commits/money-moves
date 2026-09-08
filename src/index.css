@@ -3402,3 +3402,678 @@ button.segmented-tab.active:hover {
 .year-month-row.quiet {
   opacity: 0.5;
 }
+
+/* ---------- Notebooks ---------- */
+
+.notebook-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.notebook-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notebook-face {
+  --book-color: var(--sage);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 118px;
+  padding: 16px 16px 14px 20px;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-left: 8px solid var(--book-color);
+  border-radius: 4px 12px 12px 4px;
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.notebook-face:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(45, 50, 48, 0.12);
+}
+
+.notebook-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.notebook-desc {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-soft);
+}
+
+.notebook-count {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+}
+
+.notebook-edit {
+  align-self: flex-start;
+}
+
+.notebook-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  .notebook-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.notebook-contents {
+  position: sticky;
+  top: 76px;
+}
+
+.toc {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.toc-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  align-self: auto;
+}
+
+.toc-item:hover {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.toc-item.active {
+  background: var(--sage-soft);
+  color: var(--sage);
+  font-weight: 600;
+}
+
+.toc-number {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+.toc-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toc-add {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.notebook-page {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-title {
+  width: 100%;
+  padding: 0 0 10px;
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+
+.page-title:focus {
+  box-shadow: none;
+  border-color: var(--sage);
+}
+
+.page-body {
+  flex: 1;
+  width: 100%;
+  min-height: 320px;
+  margin-top: 14px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  background: transparent;
+  border: none;
+  resize: vertical;
+}
+
+.page-body:focus {
+  box-shadow: none;
+}
+
+.page-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Journal: a quiet room ---------- */
+/* --font-journal is swapped for Mal's own font once the file is in
+   public/fonts — until then it falls back to a warm serif. */
+
+:root {
+  --font-journal: var(--font-serif);
+  --paper: #fdfbf5;
+  --paper-line: rgba(63, 107, 92, 0.08);
+}
+
+:root[data-theme='dark'] {
+  --paper: #2a2f34;
+  --paper-line: rgba(127, 179, 158, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #2a2f34;
+    --paper-line: rgba(127, 179, 158, 0.1);
+  }
+}
+
+.journal {
+  padding-bottom: 20px;
+}
+
+.journal-paper {
+  position: relative;
+  padding: 34px 32px 22px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(45, 50, 48, 0.08);
+}
+
+.journal-paper::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  border-radius: 14px 14px 0 0;
+  background: linear-gradient(90deg, var(--sage), var(--clay));
+  opacity: 0.5;
+}
+
+.journal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.journal-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.journal-dear {
+  font-family: var(--font-journal);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.journal-day {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.journal-arrow {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.journal-arrow:hover:not(:disabled) {
+  color: var(--sage);
+  border-color: var(--sage);
+  background: transparent;
+}
+
+.journal-arrow:disabled {
+  opacity: 0.3;
+}
+
+.journal-write {
+  display: block;
+  width: 100%;
+  min-height: 46vh;
+  padding: 0;
+  font-family: var(--font-journal);
+  font-size: 19px;
+  line-height: 34px;
+  color: var(--text);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 33px,
+    var(--paper-line) 33px,
+    var(--paper-line) 34px
+  );
+  background-attachment: local;
+  border: none;
+  border-radius: 0;
+  resize: vertical;
+}
+
+.journal-write:focus {
+  box-shadow: none;
+}
+
+.journal-write::placeholder {
+  color: var(--text-soft);
+  opacity: 0.4;
+}
+
+.journal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.journal-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.journal-shelf .shelf-date {
+  padding: 0;
+  font-family: var(--font-journal);
+  font-size: 16px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  align-self: flex-start;
+  text-align: left;
+}
+
+.journal-shelf .shelf-date:hover {
+  color: var(--sage);
+  background: transparent;
+}
+
+.journal-read {
+  white-space: pre-wrap;
+  font-family: var(--font-journal);
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text);
+}
+
+/* ============================================================
+   Brand module
+   ============================================================ */
+
+.brand-module {
+  padding-bottom: 40px;
+}
+
+.brand-switcher {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+
+.brand-chip {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-soft);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.brand-chip:hover {
+  color: var(--sage);
+}
+
+.brand-chip.active {
+  color: var(--card-bg);
+  background: var(--sage);
+}
+
+.brand-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.brand-tab {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.brand-tab.active {
+  border-color: var(--sage);
+}
+
+.brand-stub-note {
+  padding: 16px 20px;
+}
+
+.brand-kit-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-soft);
+  margin-bottom: 10px;
+}
+
+.brand-tagline-card {
+  text-align: center;
+}
+
+.brand-tagline {
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.swatch-chip {
+  width: 100%;
+  height: 68px;
+  border-radius: 12px;
+  border: 1px solid rgba(45, 50, 48, 0.08);
+  box-shadow: var(--shadow);
+}
+
+.swatch-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 6px;
+}
+
+.swatch-hex {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: var(--text-soft);
+  text-transform: uppercase;
+}
+
+.swatch-note {
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.3;
+}
+
+.brand-field {
+  margin-bottom: 18px;
+}
+
+.brand-field:last-child {
+  margin-bottom: 0;
+}
+
+.brand-field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+  margin-bottom: 6px;
+}
+
+.brand-field input,
+.logo-slot input {
+  width: 100%;
+}
+
+.font-preview {
+  margin-top: 10px;
+  font-size: 22px;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.font-preview-body {
+  font-size: 16px;
+}
+
+.logo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.logo-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.logo-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.logo-preview img {
+  max-width: 100%;
+  max-height: 96px;
+  object-fit: contain;
+}
+
+.logo-placeholder {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.brand-hint {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+.voice-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.voice-block .brand-kit-eyebrow {
+  margin-top: 8px;
+}
+
+.voice-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.voice-chip {
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.voice-chip-banned {
+  background: var(--terracotta-muted-soft);
+  color: var(--terracotta-muted-text);
+  text-decoration: line-through;
+}
+
+.voice-pillars {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* ============================================================
+   Brand module — Strategy & Hashtags tabs
+   ============================================================ */
+
+.brand-tab-body {
+  padding-bottom: 40px;
+}
+
+.brand-help-card {
+  background: var(--sage-soft);
+  border-color: transparent;
+}
+
+.brand-help-text {
+  color: var(--sage);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.bank-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tag-count {
+  font-size: 12px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.tag-count.good {
+  color: var(--sage);
+  font-weight: 600;
+}
+
+.hashtag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.hashtag-chip {
+  font-size: 13px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.card > .priority-pill {
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.doc-body-preview {
+  color: var(--text-soft);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}

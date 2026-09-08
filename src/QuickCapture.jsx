@@ -10,7 +10,7 @@ const KINDS = [
   { key: 'idea', label: 'Content idea', placeholder: 'The idea, in a few words' },
   { key: 'grocery', label: 'Grocery', placeholder: 'What to buy' },
   { key: 'learning', label: 'To learn', placeholder: 'Course, book, video…' },
-  { key: 'note', label: 'Note', placeholder: 'Jot it down' },
+  { key: 'note', label: 'Note', placeholder: 'Jot it down — files under All notes' },
 ]
 
 function QuickCapture() {
