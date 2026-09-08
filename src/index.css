@@ -466,6 +466,8 @@ h4 {
   bottom: 0;
   z-index: 10;
   display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
   background: var(--card-bg);
   border-top: 1px solid var(--border);
   box-shadow: 0 -4px 16px rgba(45, 50, 48, 0.06);
@@ -473,8 +475,15 @@ h4 {
     max(6px, env(safe-area-inset-left));
 }
 
+.bottom-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tabs grow to fill a wide bar, but never shrink below a tappable width —
+   when there are more than fit, the bar scrolls sideways instead of crushing. */
 .bottom-nav-tab {
-  flex: 1 1 0;
+  flex: 1 0 auto;
+  min-width: 66px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -500,6 +509,12 @@ h4 {
 
 .bottom-nav-icon {
   width: 20px;
+  height: 20px;
+}
+
+.bottom-nav-emoji {
+  font-size: 18px;
+  line-height: 20px;
   height: 20px;
 }
 

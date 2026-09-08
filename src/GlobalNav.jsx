@@ -1,8 +1,9 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 
-// The one bottom bar in the app — every area, one tap away. On a wide screen
-// the tabs spread across the whole bar; on a phone the bar scrolls sideways so
-// nothing gets crushed. Order and icons mirror the hub's module grid.
+// The one bottom bar in the app — every area, one swipe away. It scrolls like a
+// gallery: only ~3–4 tabs show at once, and the bar auto-scrolls so the area
+// you're currently in stays in view. Order and icons mirror the hub's grid.
 const TABS = [
   { to: '/', label: 'Hub', icon: '🌿', end: true },
   { to: '/money', label: 'Money', icon: '💰' },
@@ -21,8 +22,18 @@ const TABS = [
 ]
 
 function GlobalNav() {
+  const navRef = useRef(null)
+  const location = useLocation()
+
+  // Whenever the route changes, bring the active tab into view so the area
+  // you're in is never scrolled off the edge of the bar.
+  useEffect(() => {
+    const active = navRef.current?.querySelector('.bottom-nav-tab.active')
+    active?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+  }, [location.pathname])
+
   return (
-    <nav className="bottom-nav">
+    <nav className="bottom-nav" ref={navRef}>
       {TABS.map(({ to, label, icon, end }) => (
         <NavLink
           key={to}
