@@ -9,6 +9,7 @@ function Debts() {
   const [name, setName] = useState('')
   const [startBalance, setStartBalance] = useState('')
   const [amounts, setAmounts] = useState({})
+  const [showArchived, setShowArchived] = useState(false)
 
   async function loadDebts() {
     const { data, error } = await supabase.from('debts').select('*')
@@ -142,6 +143,18 @@ function Debts() {
     loadPayments(debtId)
   }
 
+  async function toggleArchive(debt) {
+    const { error } = await supabase
+      .from('debts')
+      .update({ archived: !debt.archived })
+      .eq('id', debt.id)
+    if (error) {
+      console.log(error.message)
+      return
+    }
+    loadDebts()
+  }
+
   function renderDebt(debt) {
     const payments = paymentsByDebt[debt.id] || []
     const startAmount = Number(debt.start_balance) || 0
@@ -155,6 +168,9 @@ function Debts() {
       <div className="subcard" key={debt.id}>
         <div className="fund-header">
           <h4>{debt.name}</h4>
+          <button type="button" className="row-action-btn" onClick={() => toggleArchive(debt)}>
+            {debt.archived ? 'Unarchive' : 'Archive'}
+          </button>
         </div>
 
         <ul className="list">
@@ -257,8 +273,23 @@ function Debts() {
         <button type="submit">Create</button>
       </form>
 
+      <div className="transaction-filter-bar">
+        <label className="filter-toggle">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          />
+          Show archived
+        </label>
+      </div>
+
       <div className="fund-group">
-        {debts.length > 0 ? debts.map(renderDebt) : <p className="empty-text">No debts yet.</p>}
+        {debts.filter((d) => showArchived || !d.archived).length > 0 ? (
+          debts.filter((d) => showArchived || !d.archived).map(renderDebt)
+        ) : (
+          <p className="empty-text">No debts yet.</p>
+        )}
       </div>
     </div>
   )

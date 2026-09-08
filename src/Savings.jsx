@@ -13,6 +13,7 @@ function Savings() {
 
   const [name, setName] = useState('')
   const [targetAmount, setTargetAmount] = useState('')
+  const [showArchived, setShowArchived] = useState(false)
 
   const loadFunds = useCallback(async () => {
     const { data, error } = await supabase.from('savings_funds').select('*')
@@ -47,8 +48,10 @@ function Savings() {
     loadAccounts()
   }, [loadFunds, loadAccounts])
 
-  const emergencyFund = funds.find((f) => f.kind === 'emergency')
-  const sinkingFunds = funds.filter((f) => f.kind === 'sinking')
+  const visibleFunds = funds.filter((f) => showArchived || !f.archived)
+  const emergencyFund = visibleFunds.find((f) => f.kind === 'emergency')
+  const sinkingFunds = visibleFunds.filter((f) => f.kind === 'sinking')
+  const hasAnyEmergency = funds.some((f) => f.kind === 'emergency')
 
   async function handleCreateSinking(e) {
     e.preventDefault()
@@ -74,6 +77,18 @@ function Savings() {
       .insert({ name: 'Emergency Fund', kind: 'emergency' })
     if (error) {
       console.log('Failed to create emergency fund', error.message)
+      return
+    }
+    loadFunds()
+  }
+
+  async function toggleArchive(fund) {
+    const { error } = await supabase
+      .from('savings_funds')
+      .update({ archived: !fund.archived })
+      .eq('id', fund.id)
+    if (error) {
+      console.log('Failed to archive fund', error.message)
       return
     }
     loadFunds()
@@ -169,7 +184,10 @@ function Savings() {
     return (
       <div className="subcard fund-card" key={fund.id}>
         <button type="button" className="fund-card-head" onClick={() => setExpandedId(open ? null : fund.id)}>
-          <span className="fund-card-name">{fund.name}</span>
+          <span className="fund-card-name">
+            {fund.name}
+            {fund.archived && <span className="priority-pill fund-archived-pill">Archived</span>}
+          </span>
           <span className="fund-card-right">
             <span className="money">{formatMoney(balance)}</span>
             <span className="row-action-btn">{open ? 'Close' : 'Open'}</span>
@@ -260,6 +278,14 @@ function Savings() {
             ) : (
               <p className="empty-text">No entries yet.</p>
             )}
+
+            <button
+              type="button"
+              className="row-action-btn"
+              onClick={() => toggleArchive(fund)}
+            >
+              {fund.archived ? 'Unarchive fund' : 'Archive fund'}
+            </button>
           </div>
         )}
       </div>
@@ -271,10 +297,23 @@ function Savings() {
       <h2>Savings</h2>
       {notice && <p className="list-row-sub savings-notice">{notice}</p>}
 
+      <div className="transaction-filter-bar">
+        <label className="filter-toggle">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          />
+          Show archived
+        </label>
+      </div>
+
       <h3>Emergency Fund</h3>
       <div className="fund-group">
         {emergencyFund ? (
           renderFund(emergencyFund)
+        ) : hasAnyEmergency ? (
+          <p className="empty-text">Emergency fund is archived.</p>
         ) : (
           <div className="subcard">
             <p className="empty-text">No emergency fund yet.</p>

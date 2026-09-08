@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
 
@@ -121,7 +122,9 @@ function Accounts() {
               <li key={account.id} className="list-row account-row">
                 <div className="task-row-body">
                   <div className="list-row-main">
-                    <span className="list-row-title">{account.name}</span>
+                    <Link to={`/money/accounts/${account.id}`} className="list-row-title project-link">
+                      {account.name}
+                    </Link>
                     <span className="list-row-sub">
                       {account.institution ? `${account.institution} · ` : ''}
                       {KIND_LABEL[account.kind] || account.kind}

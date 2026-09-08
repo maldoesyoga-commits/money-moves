@@ -45,6 +45,7 @@ function Budgets() {
   const [txns, setTxns] = useState([])
   const [drafts, setDrafts] = useState({})
   const [showAll, setShowAll] = useState(false)
+  const [expandedCat, setExpandedCat] = useState(null)
 
   const load = useCallback(async () => {
     const { data: categoryRows, error: categoryError } = await supabase
@@ -363,7 +364,44 @@ function Budgets() {
                             avg {formatMoney(average)}
                           </button>
                         )}
+                        <button
+                          type="button"
+                          className="row-action-btn"
+                          onClick={() =>
+                            setExpandedCat(expandedCat === category.id ? null : category.id)
+                          }
+                        >
+                          {expandedCat === category.id ? 'Hide history' : 'History'}
+                        </button>
                       </div>
+
+                      {expandedCat === category.id && (
+                        <div className="budget-history">
+                          {periods.map((row) => {
+                            const set = budgetFor(category.id, row.startKey)
+                            const act = spentIn(category.id, row)
+                            const diff = (set || 0) - act
+                            return (
+                              <div className="budget-history-row" key={row.startKey}>
+                                <span className="budget-history-period">
+                                  {periodShortLabel(row, statementDay)}
+                                </span>
+                                <span className="list-row-sub">
+                                  set {set != null ? formatMoney(set) : '—'}
+                                </span>
+                                <span className="list-row-sub">actual {formatMoney(act)}</span>
+                                {set != null && (
+                                  <span className={diff < 0 ? 'task-overdue' : 'amount-in'}>
+                                    {diff >= 0
+                                      ? `${formatMoney(diff)} under`
+                                      : `${formatMoney(-diff)} over`}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </li>
                   )
                 })}

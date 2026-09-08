@@ -3,6 +3,7 @@ import Home from './Home'
 import Insights from './Insights'
 import Income from './Income'
 import Accounts from './Accounts'
+import AccountDetail from './AccountDetail'
 import Savings from './Savings'
 import Debts from './Debts'
 import Transactions from './Transactions'
@@ -28,6 +29,7 @@ function MoneyMoves() {
           <Route path="/" element={<Home />} />
           <Route path="insights" element={<Insights />} />
           <Route path="accounts" element={<Accounts />} />
+          <Route path="accounts/:accountId" element={<AccountDetail />} />
           <Route path="transactions" element={<Transactions />} />
           <Route path="income" element={<Income />} />
           <Route path="savings" element={<Savings />} />

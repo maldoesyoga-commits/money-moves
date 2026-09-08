@@ -5335,3 +5335,36 @@ button.segmented-tab.active:hover {
 .mini-form button {
   flex: 0 0 auto;
 }
+
+/* ============================================================
+   Budget history + archived pill
+   ============================================================ */
+
+.budget-history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.budget-history-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 13px;
+}
+
+.budget-history-period {
+  font-weight: 600;
+  color: var(--text);
+  min-width: 64px;
+}
+
+.fund-archived-pill {
+  margin-left: 8px;
+}
