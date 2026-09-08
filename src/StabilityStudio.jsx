@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { supabase } from './lib/supabase'
+import { todayISO } from './lib/taskDates'
 import {
   SS_DOC_URL,
   SS_INTRO,
@@ -10,35 +12,76 @@ import {
   SS_TONE,
 } from './lib/stabilityStudio'
 
-const LIMBS_STORAGE_KEY = 'homestead.ss.limbs'
 const STATE_ORDER = SS_LIMB_STATES.map((s) => s.value)
 const STATE_LABEL = Object.fromEntries(SS_LIMB_STATES.map((s) => [s.value, s.label]))
 
-function loadLimbs() {
-  try {
-    const saved = localStorage.getItem(LIMBS_STORAGE_KEY)
-    if (saved) return JSON.parse(saved)
-  } catch {
-    // ignore
-  }
-  return {}
+function formatDate(iso) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 function StabilityStudio() {
-  const [limbs, setLimbs] = useState(loadLimbs)
+  const today = todayISO()
+
+  const [limbs, setLimbs] = useState({})
+  const [history, setHistory] = useState([])
+
+  const load = useCallback(async () => {
+    const todayRes = await supabase
+      .from('stability_checkins')
+      .select('limbs')
+      .eq('checkin_date', today)
+      .maybeSingle()
+
+    if (todayRes.error) {
+      // Table may not exist yet — the check-in still works in the session,
+      // saving turns on once supabase/stability.sql is run.
+      console.log('stability_checkins not loaded (run supabase/stability.sql?):', todayRes.error.message)
+    } else {
+      setLimbs(todayRes.data?.limbs || {})
+    }
+
+    const histRes = await supabase
+      .from('stability_checkins')
+      .select('checkin_date, limbs')
+      .lt('checkin_date', today)
+      .order('checkin_date', { ascending: false })
+      .limit(14)
+
+    if (!histRes.error && histRes.data) setHistory(histRes.data)
+  }, [today])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function save(next) {
+    setLimbs(next)
+    const { error } = await supabase
+      .from('stability_checkins')
+      .upsert({ checkin_date: today, limbs: next }, { onConflict: 'user_id,checkin_date' })
+    if (error) {
+      console.log('Could not save check-in (run supabase/stability.sql?):', error.message)
+    }
+  }
 
   function cycleLimb(key) {
-    setLimbs((prev) => {
-      const current = prev[key] || 'unset'
-      const nextIndex = (STATE_ORDER.indexOf(current) + 1) % STATE_ORDER.length
-      const next = { ...prev, [key]: STATE_ORDER[nextIndex] }
-      try {
-        localStorage.setItem(LIMBS_STORAGE_KEY, JSON.stringify(next))
-      } catch {
-        // ignore
-      }
-      return next
-    })
+    const current = limbs[key]?.state || 'unset'
+    const nextState = STATE_ORDER[(STATE_ORDER.indexOf(current) + 1) % STATE_ORDER.length]
+    save({ ...limbs, [key]: { ...(limbs[key] || {}), state: nextState } })
+  }
+
+  function setNoteLocal(key, note) {
+    setLimbs((prev) => ({ ...prev, [key]: { ...(prev[key] || {}), note } }))
+  }
+
+  function persistNote(key, note) {
+    const clean = note.trim() ? note.trim() : undefined
+    const next = { ...limbs, [key]: { ...(limbs[key] || {}), note: clean } }
+    save(next)
   }
 
   return (
@@ -73,29 +116,82 @@ function StabilityStudio() {
       <div className="card">
         <div className="project-scope-header">
           <h2>The limbs we live</h2>
-          <span className="list-row-sub">tap to check in</span>
+          <span className="list-row-sub">today’s check-in</span>
         </div>
         <p className="brand-hint ss-limbs-hint">
-          You don’t balance life — you tend to your limbs. None are meant to be perfect; some
-          are rebuilding. Tap a limb to note how it feels today (private, saved on this device).
+          You don’t balance life — you tend to your limbs. Tap a limb’s state to move it through
+          strong, rebuilding, needs care; add a short note if you want. Saved by day, so you can
+          look back gently.
         </p>
-        <div className="ss-limbs">
+        <ul className="ss-limb-list">
           {SS_LIMBS.map((limb) => {
-            const state = limbs[limb.key] || 'unset'
+            const entry = limbs[limb.key] || {}
+            const state = entry.state || 'unset'
             return (
-              <button
-                key={limb.key}
-                type="button"
-                className={`ss-limb ss-limb-${state}`}
-                onClick={() => cycleLimb(limb.key)}
-              >
+              <li key={limb.key} className={`ss-limb-row ss-limb-${state}`}>
                 <span className="ss-limb-icon">{limb.icon}</span>
-                <span className="ss-limb-label">{limb.label}</span>
-                <span className="ss-limb-state">{STATE_LABEL[state]}</span>
-              </button>
+                <div className="ss-limb-body">
+                  <span className="ss-limb-label">{limb.label}</span>
+                  <input
+                    type="text"
+                    className="ss-limb-note"
+                    value={entry.note || ''}
+                    placeholder="a short note (optional)"
+                    onChange={(e) => setNoteLocal(limb.key, e.target.value)}
+                    onBlur={(e) => persistNote(limb.key, e.target.value)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className={`ss-limb-state-btn state-${state}`}
+                  onClick={() => cycleLimb(limb.key)}
+                >
+                  {STATE_LABEL[state]}
+                </button>
+              </li>
             )
           })}
+        </ul>
+      </div>
+
+      {/* History */}
+      <div className="card">
+        <div className="project-scope-header">
+          <h2>Looking back</h2>
+          <span className="list-row-sub">{history.length}</span>
         </div>
+        {history.length === 0 ? (
+          <p className="empty-text">Your past check-ins will gather here, one day at a time.</p>
+        ) : (
+          <ul className="list">
+            {history.map((row) => {
+              const flagged = SS_LIMBS.filter((l) => {
+                const s = row.limbs?.[l.key]?.state
+                return s === 'injured' || s === 'rebuilding'
+              })
+              return (
+                <li key={row.checkin_date} className="list-row">
+                  <div className="task-row-body">
+                    <div className="list-row-main task-main">
+                      <span className="list-row-title">{formatDate(row.checkin_date)}</span>
+                      <span className="ss-history-chips">
+                        {flagged.length > 0 ? (
+                          flagged.map((l) => (
+                            <span key={l.key} className="ss-hist-chip" title={l.label}>
+                              {l.icon}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="list-row-sub">all steady</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </div>
 
       {/* The journey */}

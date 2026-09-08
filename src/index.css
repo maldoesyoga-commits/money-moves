@@ -4996,3 +4996,113 @@ button.segmented-tab.active:hover {
 .perf-source-select {
   width: 100%;
 }
+
+/* ============================================================
+   Brand overview snapshot + Stability Studio check-in log
+   ============================================================ */
+
+.module-card-stat {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sage);
+  margin-top: 2px;
+}
+
+.ss-limb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ss-limb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: var(--card-bg);
+}
+
+.ss-limb-row.ss-limb-unset {
+  border-left-color: var(--border);
+}
+
+.ss-limb-row.ss-limb-strong {
+  border-left-color: var(--sage);
+}
+
+.ss-limb-row.ss-limb-rebuilding {
+  border-left-color: var(--clay);
+}
+
+.ss-limb-row.ss-limb-injured {
+  border-left-color: var(--terracotta-muted);
+}
+
+.ss-limb-row .ss-limb-icon {
+  font-size: 22px;
+  flex: 0 0 auto;
+}
+
+.ss-limb-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ss-limb-row .ss-limb-label {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.ss-limb-note {
+  width: 100%;
+  font-size: 13px;
+}
+
+.ss-limb-state-btn {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-soft);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ss-limb-state-btn.state-strong {
+  color: var(--sage);
+  border-color: var(--sage);
+  background: var(--sage-soft);
+}
+
+.ss-limb-state-btn.state-rebuilding {
+  color: var(--clay);
+  border-color: var(--clay);
+  background: var(--clay-soft);
+}
+
+.ss-limb-state-btn.state-injured {
+  color: var(--terracotta-muted-text);
+  border-color: var(--terracotta-muted);
+  background: var(--terracotta-muted-soft);
+}
+
+.ss-history-chips {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ss-hist-chip {
+  font-size: 14px;
+}
