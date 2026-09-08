@@ -20,6 +20,9 @@ function PlanningWeek({ start, end, onPickDay }) {
   const [invoices, setInvoices] = useState([])
   const [blocks, setBlocks] = useState([])
   const [projects, setProjects] = useState([])
+  const [flProjects, setFlProjects] = useState([])
+  const [clients, setClients] = useState([])
+  const [milestones, setMilestones] = useState([])
 
   const [focus, setFocus] = useState(null)
   const [focusDraft, setFocusDraft] = useState('')
@@ -27,13 +30,34 @@ function PlanningWeek({ start, end, onPickDay }) {
   const [money, setMoney] = useState(null)
 
   const load = useCallback(async () => {
-    const [taskRes, contentRes, planRes, invoiceRes, blockRes, projectRes] = await Promise.all([
+    const [
+      taskRes,
+      contentRes,
+      planRes,
+      invoiceRes,
+      blockRes,
+      projectRes,
+      flProjectRes,
+      clientRes,
+      milestoneRes,
+    ] = await Promise.all([
       supabase.from('tasks').select('*').gte('due_date', start).lte('due_date', end),
       supabase.from('content_items').select('*').gte('publish_date', start).lte('publish_date', end),
       supabase.from('plan_entries').select('*').gte('start_date', start).lte('start_date', end),
       supabase.from('invoices').select('*').gte('due_date', start).lte('due_date', end),
       supabase.from('time_blocks').select('*').gte('block_date', start).lte('block_date', end),
       supabase.from('projects').select('*'),
+      // The other project planner — freelance work lives in its own table.
+      supabase
+        .from('freelance_projects')
+        .select('*')
+        .gte('due_date', start)
+        .lte('due_date', end),
+      supabase.from('clients').select('id, name'),
+      supabase
+        .from('milestones')
+        .select('*')
+        .or(`and(achieved.eq.false,target_date.gte.${start},target_date.lte.${end}),and(achieved.eq.true,achieved_on.gte.${start},achieved_on.lte.${end})`),
     ])
 
     if (taskRes.error) report('Failed to load tasks', taskRes.error)
@@ -43,6 +67,9 @@ function PlanningWeek({ start, end, onPickDay }) {
     setInvoices(invoiceRes.error ? [] : invoiceRes.data || [])
     setBlocks(blockRes.error ? [] : blockRes.data || [])
     setProjects(projectRes.error ? [] : projectRes.data || [])
+    setFlProjects(flProjectRes.error ? [] : flProjectRes.data || [])
+    setClients(clientRes.error ? [] : clientRes.data || [])
+    setMilestones(milestoneRes.error ? [] : milestoneRes.data || [])
 
     const planRows = planRes.error ? [] : planRes.data || []
     setPlans(planRows.filter((row) => row.horizon === 'day'))
@@ -204,6 +231,31 @@ function PlanningWeek({ start, end, onPickDay }) {
     return projects.find((project) => project.id === id)?.name
   }
 
+  function clientName(id) {
+    return clients.find((client) => client.id === id)?.name
+  }
+
+  // Both planners feed the week. Personal and work projects carry a start and
+  // a target date; freelance projects carry a client deadline.
+  function milestonesOn(day) {
+    const own = projects.flatMap((project) => {
+      const rows = []
+      if (project.start_date === day) {
+        rows.push({ id: `${project.id}-start`, project, kind: 'starts' })
+      }
+      if (project.target_date === day) {
+        rows.push({ id: `${project.id}-target`, project, kind: 'target' })
+      }
+      return rows
+    })
+
+    const freelance = flProjects
+      .filter((project) => project.due_date === day)
+      .map((project) => ({ id: `fl-${project.id}`, project, kind: 'freelance' }))
+
+    return [...own, ...freelance]
+  }
+
   return (
     <>
       <div className="card week-header">
@@ -280,6 +332,10 @@ function PlanningWeek({ start, end, onPickDay }) {
           const dayPlans = plans.filter((plan) => plan.start_date === day)
           const dayInvoices = invoices.filter((invoice) => invoice.due_date === day)
           const dayBlocks = blocks.filter((block) => block.block_date === day)
+          const dayMilestones = milestonesOn(day)
+          const dayMarkers = milestones.filter((row) =>
+            row.achieved ? row.achieved_on === day : row.target_date === day,
+          )
           const intention = dayPlans.find((plan) => plan.entry_kind === 'intention')
           const priorities = dayPlans.filter((plan) => plan.entry_kind === 'priority')
 
@@ -287,7 +343,9 @@ function PlanningWeek({ start, end, onPickDay }) {
             dayTasks.length === 0 &&
             dayContent.length === 0 &&
             dayPlans.length === 0 &&
-            dayInvoices.length === 0
+            dayInvoices.length === 0 &&
+            dayMilestones.length === 0 &&
+            dayMarkers.length === 0
 
           const label = new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
             weekday: 'long',
@@ -353,6 +411,48 @@ function PlanningWeek({ start, end, onPickDay }) {
                         >
                           Focus
                         </button>
+                      </div>
+                    </li>
+                  ))}
+
+                  {dayMilestones.map(({ id, project, kind }) => (
+                    <li key={id} className="list-row">
+                      <div className="list-row-main">
+                        <Link
+                          to={
+                            kind === 'freelance'
+                              ? '/freelance/projects'
+                              : `/tasks/projects/${project.id}`
+                          }
+                          className="list-row-title project-link"
+                        >
+                          <span className="week-tag priority">
+                            {kind === 'starts' ? 'starts' : 'due'}
+                          </span>
+                          {project.name}
+                        </Link>
+                        <span className="list-row-sub">
+                          {kind === 'freelance'
+                            ? [clientName(project.client_id), project.status]
+                                .filter(Boolean)
+                                .join(' · ')
+                            : kind === 'starts'
+                              ? 'project starts'
+                              : 'project target date'}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+
+                  {dayMarkers.map((row) => (
+                    <li key={row.id} className={`list-row${row.achieved ? ' task-done' : ''}`}>
+                      <div className="list-row-main">
+                        <Link to="/milestones" className="list-row-title project-link">
+                          <span className="week-tag priority">
+                            {row.achieved ? 'reached' : 'milestone'}
+                          </span>
+                          {row.title}
+                        </Link>
                       </div>
                     </li>
                   ))}

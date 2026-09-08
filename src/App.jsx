@@ -11,7 +11,9 @@ import Learning from './Learning'
 import Content from './Content'
 import Brand from './Brand'
 import Freelance from './Freelance'
-import Meals from './Meals'
+import Household from './Household'
+import Milestones from './Milestones'
+import CookieJar from './CookieJar'
 import Search from './Search'
 import Backup from './Backup'
 import Notes from './Notes'
@@ -205,7 +207,11 @@ function App() {
         <Route path="/content" element={<Content />} />
         <Route path="/brand/*" element={<Brand />} />
         <Route path="/freelance/*" element={<Freelance />} />
-        <Route path="/meals/*" element={<Meals />} />
+        <Route path="/household/*" element={<Household />} />
+        <Route path="/milestones" element={<Milestones />} />
+        <Route path="/cookie-jar" element={<CookieJar />} />
+        {/* Meals moved under Household — old links and bookmarks still land. */}
+        <Route path="/meals/*" element={<Navigate to="/household/meals" replace />} />
         <Route path="/search" element={<Search />} />
         <Route path="/notes/*" element={<Notes />} />
         <Route path="/daily/*" element={<Daily />} />

@@ -90,3 +90,54 @@ export function quarterOf(iso) {
   const date = new Date(`${iso}T12:00:00`)
   return `Q${Math.floor(date.getMonth() / 3) + 1} ${date.getFullYear()}`
 }
+
+// --- Goal scoreboard helpers -------------------------------------------------
+
+// Days from the cycle start up to and including today, capped at the full
+// cycle. Used as the denominator for habit consistency.
+export function daysElapsed(startDate, iso = todayISO()) {
+  const start = new Date(`${startDate}T12:00:00`)
+  const day = new Date(`${iso}T12:00:00`)
+  const diff = Math.floor((day - start) / 86400000) + 1
+  const total = BUFFER_WEEK * 7
+  return Math.max(0, Math.min(diff, total))
+}
+
+// Objectives are milestones — ticked off once each.
+export function objectiveProgress(objectives) {
+  const total = objectives.length
+  if (total === 0) return null
+  const done = objectives.filter((row) => row.done).length
+  return { done, total, pct: Math.round((done / total) * 100) }
+}
+
+// Open/done task counts across every project pointed at a goal.
+export function projectProgress(projects, tasks) {
+  if (projects.length === 0) return null
+  const ids = new Set(projects.map((project) => project.id))
+  const mine = tasks.filter((task) => ids.has(task.project_id))
+  const done = mine.filter((task) => task.status === 'done').length
+  return {
+    projects: projects.length,
+    total: mine.length,
+    done,
+    pct: mine.length ? Math.round((done / mine.length) * 100) : null,
+  }
+}
+
+// How often the goal's habits were actually kept, as a share of the days
+// available so far. Same spirit as the execution score: effort, not outcome.
+export function habitConsistency(habits, logs, startDate, iso = todayISO()) {
+  if (habits.length === 0) return null
+
+  const days = daysElapsed(startDate, iso)
+  if (days <= 0) return { habits: habits.length, hits: 0, possible: 0, pct: null }
+
+  const ids = new Set(habits.map((habit) => habit.id))
+  const hits = logs.filter(
+    (log) => ids.has(log.habit_id) && log.log_date >= startDate && log.log_date <= iso,
+  ).length
+
+  const possible = habits.length * days
+  return { habits: habits.length, hits, possible, pct: Math.round((hits / possible) * 100) }
+}

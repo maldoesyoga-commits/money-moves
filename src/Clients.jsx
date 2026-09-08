@@ -175,6 +175,8 @@ function Clients() {
                     <span className="list-row-sub task-meta">
                       <span>{BRAND_LABEL[client.brand]}</span>
                       {client.rate && <span>{formatMoney(client.rate)}/h</span>}
+                      {client.company && <span>{client.company}</span>}
+                      {client.payment_terms && <span>{client.payment_terms}</span>}
                       {stat.minutes > 0 && <span>{formatHours(stat.minutes)} logged</span>}
                       {stat.outstanding > 0 && (
                         <span className="task-overdue">{formatMoney(stat.outstanding)} owing</span>
@@ -240,24 +242,104 @@ function Clients() {
                       </button>
                       <TagPicker table="clients" id={client.id} />
                     </div>
-                    <input
-                      type="text"
-                      value={client.contact_name || ''}
-                      placeholder="contact name"
-                      onChange={(e) =>
-                        updateClient(client.id, { contact_name: e.target.value || null })
-                      }
-                    />
-                    <input
-                      type="email"
-                      value={client.email || ''}
-                      placeholder="email"
-                      onChange={(e) => updateClient(client.id, { email: e.target.value || null })}
-                    />
+                    <h4>Who they are</h4>
+                    <div className="field-row">
+                      <input
+                        type="text"
+                        value={client.contact_name || ''}
+                        placeholder="contact name"
+                        onChange={(e) =>
+                          updateClient(client.id, { contact_name: e.target.value || null })
+                        }
+                      />
+                      <input
+                        type="text"
+                        value={client.company || ''}
+                        placeholder="company / practice"
+                        onChange={(e) =>
+                          updateClient(client.id, { company: e.target.value || null })
+                        }
+                      />
+                    </div>
+
+                    <div className="field-row">
+                      <input
+                        type="email"
+                        value={client.email || ''}
+                        placeholder="email"
+                        onChange={(e) => updateClient(client.id, { email: e.target.value || null })}
+                      />
+                      <input
+                        type="tel"
+                        value={client.phone || ''}
+                        placeholder="phone"
+                        onChange={(e) => updateClient(client.id, { phone: e.target.value || null })}
+                      />
+                    </div>
+
+                    <h4>Billing</h4>
+                    <div className="field-row">
+                      <input
+                        type="email"
+                        value={client.billing_email || ''}
+                        placeholder="billing email (if different)"
+                        onChange={(e) =>
+                          updateClient(client.id, { billing_email: e.target.value || null })
+                        }
+                      />
+                      <input
+                        type="text"
+                        value={client.payment_terms || ''}
+                        placeholder="terms — e.g. net 14"
+                        onChange={(e) =>
+                          updateClient(client.id, { payment_terms: e.target.value || null })
+                        }
+                      />
+                    </div>
+
                     <textarea
                       rows="2"
+                      value={client.address || ''}
+                      placeholder="billing address — goes on the invoice"
+                      onChange={(e) => updateClient(client.id, { address: e.target.value || null })}
+                    />
+
+                    <h4>Background</h4>
+                    <div className="field-row">
+                      <input
+                        type="url"
+                        value={client.website || ''}
+                        placeholder="website"
+                        onChange={(e) =>
+                          updateClient(client.id, { website: e.target.value || null })
+                        }
+                      />
+                      <label className="filter-toggle">
+                        Working together since
+                        <input
+                          type="date"
+                          className="inline-select"
+                          value={client.started_on || ''}
+                          onChange={(e) =>
+                            updateClient(client.id, { started_on: e.target.value || null })
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={client.how_we_met || ''}
+                      placeholder="how you came to work together"
+                      onChange={(e) =>
+                        updateClient(client.id, { how_we_met: e.target.value || null })
+                      }
+                    />
+
+                    <textarea
+                      rows="3"
                       value={client.notes || ''}
-                      placeholder="notes"
+                      placeholder="notes — how they like to work, what to remember"
                       onChange={(e) => updateClient(client.id, { notes: e.target.value || null })}
                     />
                     {stat.paid > 0 && (

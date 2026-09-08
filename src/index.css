@@ -5368,3 +5368,344 @@ button.segmented-tab.active:hover {
 .fund-archived-pill {
   margin-left: 8px;
 }
+
+/* ---------------------------------------------------------------------------
+   Form row fixes
+
+   `form` sets flex-direction: column. `.field-row` set display and wrapping but
+   never overrode the direction, so a <form className="field-row"> laid itself
+   out as a column — and `.field-row > * { flex: 1 1 160px }` then applied that
+   160px basis to the HEIGHT, which is what turned every submit button into a
+   tall pill. Buttons size to their label; only the fields share the row.
+   --------------------------------------------------------------------------- */
+
+form.field-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.field-row > button,
+.field-row > .row-action-btn,
+.field-row > a.row-action-btn,
+.task-controls > button,
+.task-controls > .row-action-btn {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+/* Inputs and selects keep growing; nothing else needs to. */
+.field-row > label,
+.field-row > .color-picker-row {
+  flex: 0 1 auto;
+}
+
+/* On a narrow screen the row wraps — the button should sit at the start of its
+   own line rather than stretching across it. */
+@media (max-width: 520px) {
+  form.field-row {
+    flex-wrap: wrap;
+  }
+
+  .field-row > button {
+    align-self: flex-start;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Dashboard & charts
+
+   Chart colours are their own tokens rather than the brand --sage/--clay,
+   because the brand pair fails a colour-blindness separation check when used
+   as a categorical series. These three were validated against both surfaces:
+   adjacent-pair separation clears the normal-vision floor in light and dark,
+   and every step holds 3:1 against its background. Marks are also always
+   labelled or legended, never identified by colour alone.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --chart-1: #1f7a55;
+  --chart-2: #c2661a;
+  --chart-3: #3565b8;
+  --chart-grid: rgba(45, 50, 48, 0.08);
+  --chart-track: rgba(45, 50, 48, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --chart-1: #2fa87c;
+    --chart-2: #c9741f;
+    --chart-3: #6892dd;
+    --chart-grid: rgba(232, 230, 224, 0.1);
+    --chart-track: rgba(232, 230, 224, 0.07);
+  }
+}
+
+:root[data-theme='dark'] {
+  --chart-1: #2fa87c;
+  --chart-2: #c9741f;
+  --chart-3: #6892dd;
+  --chart-grid: rgba(232, 230, 224, 0.1);
+  --chart-track: rgba(232, 230, 224, 0.07);
+}
+
+.dash-stats {
+  margin-bottom: 16px;
+}
+
+a.dash-stat-link {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease;
+}
+
+a.dash-stat-link:hover {
+  border-color: var(--sage);
+}
+
+.dash-charts {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .dash-charts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.chart-card {
+  padding-bottom: 12px;
+}
+
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.chart-head h3 {
+  margin: 0;
+}
+
+/* The plot. No axis rule: the bars share a bottom edge, which is the baseline,
+   and a line drawn under the labels would only read as a stray rule. */
+.chart-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 132px;
+}
+
+.chart-bar-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 4px;
+  height: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: default;
+  position: relative;
+  color: var(--text-soft);
+}
+
+.chart-bar-slot:hover,
+.chart-bar-slot.is-hover,
+.chart-bar-slot:focus-visible {
+  background: var(--chart-track);
+  outline: none;
+}
+
+.chart-bar-track {
+  display: flex;
+  align-items: flex-end;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Rounded data-end, square against the baseline. */
+.chart-bar-fill {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+  transition: height 0.2s ease;
+}
+
+.chart-bar-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  min-height: 16px;
+  opacity: 0;
+}
+
+.chart-bar-value.is-shown {
+  opacity: 1;
+}
+
+.chart-bar-label {
+  font-size: 10px;
+  color: var(--text-soft);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.chart-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--card-bg);
+  font-size: 12px;
+  line-height: 1.3;
+  padding: 6px 9px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: var(--shadow);
+}
+
+.hbar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hbar-row {
+  display: grid;
+  grid-template-columns: 84px 1fr 32px;
+  align-items: center;
+  gap: 10px;
+}
+
+.hbar-label {
+  font-size: 13px;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hbar-track {
+  background: var(--chart-track);
+  border-radius: 5px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.hbar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+  min-width: 3px;
+}
+
+.hbar-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
+.meter-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.meter-block .budget-row-header {
+  margin-bottom: 4px;
+}
+
+.meter-track {
+  position: relative;
+  background: var(--chart-track);
+  border-radius: 5px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+  min-width: 3px;
+  transition: width 0.25s ease;
+}
+
+.meter-target {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--text-soft);
+  opacity: 0.55;
+}
+
+.module-grid-compact .module-card {
+  padding: 12px 10px;
+}
+
+.module-grid-compact .module-card-name {
+  font-size: 13px;
+}
+
+
+/* --- Freelance timer & invoice builder ------------------------------------ */
+
+.timer-readout {
+  font-family: var(--font-serif);
+  font-size: 42px;
+  line-height: 1.1;
+  margin: 4px 0 14px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-readout.is-running {
+  color: var(--sage);
+}
+
+.list-row.timer-live {
+  border-left: 3px solid var(--sage);
+  padding-left: 9px;
+}
+
+/* The session list inside the invoice builder is a nested card — flatten it
+   so it reads as part of the form rather than a card floating in a card. */
+.invoice-preview {
+  background: var(--bg);
+  box-shadow: none;
+  margin: 4px 0 12px;
+}
+
+
+.timer-actions {
+  align-items: center;
+}
+
+.timer-actions > button {
+  flex: 0 0 auto;
+}
+
+.timer-project {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}

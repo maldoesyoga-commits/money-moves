@@ -22,6 +22,7 @@ const BOARD_ORDER = ['active', 'on_hold', 'done', 'archived']
 
 function Projects() {
   const [projects, setProjects] = useState([])
+  const [goals, setGoals] = useState([])
   const [taskCounts, setTaskCounts] = useState({})
   const [showArchived, setShowArchived] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -44,6 +45,30 @@ function Projects() {
     }
 
     setProjects(data)
+  }, [])
+
+  // Goals from the cycle currently running, so a project can be pointed at one
+  // without leaving the planner.
+  const loadGoals = useCallback(async () => {
+    const { data: cycles, error } = await supabase
+      .from('twy_cycles')
+      .select('id')
+      .in('status', ['planning', 'active'])
+      .order('start_date', { ascending: false })
+      .limit(1)
+
+    if (error || !cycles?.length) {
+      setGoals([])
+      return
+    }
+
+    const { data } = await supabase
+      .from('twy_goals')
+      .select('id, title, color')
+      .eq('cycle_id', cycles[0].id)
+      .order('sort_order')
+
+    setGoals(data || [])
   }, [])
 
   const loadCounts = useCallback(async () => {
@@ -69,7 +94,8 @@ function Projects() {
   useEffect(() => {
     loadProjects()
     loadCounts()
-  }, [loadProjects, loadCounts])
+    loadGoals()
+  }, [loadProjects, loadCounts, loadGoals])
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -102,6 +128,10 @@ function Projects() {
       report('Failed to update project', error)
       loadProjects()
     }
+  }
+
+  function goalFor(project) {
+    return goals.find((goal) => goal.id === project.twy_goal_id) || null
   }
 
   const visible = projects.filter((project) => showArchived || project.status !== 'archived')
@@ -266,6 +296,7 @@ function Projects() {
                     <span className="list-row-sub">
                       {counts.open} open · {counts.done} done
                       {project.description ? ` — ${project.description}` : ''}
+                      {goalFor(project) ? ` · 🎯 ${goalFor(project).title}` : ''}
                     </span>
                   </div>
                   <button
@@ -305,6 +336,22 @@ function Projects() {
                         </option>
                       ))}
                     </select>
+                    {goals.length > 0 && (
+                      <select
+                        className="inline-select"
+                        value={project.twy_goal_id || ''}
+                        onChange={(e) =>
+                          updateProject(project.id, { twy_goal_id: e.target.value || null })
+                        }
+                      >
+                        <option value="">no goal</option>
+                        {goals.map((goal) => (
+                          <option key={goal.id} value={goal.id}>
+                            🎯 {goal.title}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <div className="color-picker-row">
                       {COLORS.map((swatch) => (
                         <button

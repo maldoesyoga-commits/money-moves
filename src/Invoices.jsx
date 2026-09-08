@@ -22,9 +22,13 @@ function Invoices() {
   const [editingId, setEditingId] = useState(null)
 
   const [clientId, setClientId] = useState('')
-  const [projectId, setProjectId] = useState('')
   const [amount, setAmount] = useState('')
   const [number, setNumber] = useState('')
+  // An invoice covers a stretch of time for one client — the project is a
+  // level of detail below that, and a client's invoice usually spans several.
+  const [from, setFrom] = useState(`${todayISO().slice(0, 7)}-01`)
+  const [to, setTo] = useState(todayISO())
+  const [allEntries, setAllEntries] = useState([])
 
   const loadInvoices = useCallback(async () => {
     const { data, error } = await supabase
@@ -64,17 +68,17 @@ function Invoices() {
     const { data: entryRows, error: entryError } = await supabase
       .from('time_entries')
       .select('*')
-      .is('invoice_id', null)
-      .eq('billable', true)
+      .order('entry_date')
 
     if (entryError) {
-      report('Failed to load unbilled time', entryError)
+      report('Failed to load time entries', entryError)
       return
     }
 
     setClients(clientRows)
     setProjects(projectRows)
-    setUnbilled(entryRows)
+    setAllEntries(entryRows)
+    setUnbilled(entryRows.filter((entry) => entry.billable && !entry.invoice_id))
   }, [])
 
   useEffect(() => {
@@ -95,11 +99,19 @@ function Invoices() {
     return project?.rate || clientFor(entry.client_id || project?.client_id)?.rate || null
   }
 
-  // Unbilled billable time for the currently selected client/project.
+  // The sessions this invoice will cover: unbilled billable time for the
+  // chosen client, inside the chosen dates. An entry logged against a project
+  // counts for that project's client even if it has no client_id of its own.
+  function clientOf(entry) {
+    return entry.client_id || projectFor(entry.project_id)?.client_id || null
+  }
+
   const matchingUnbilled = unbilled.filter((entry) => {
-    if (projectId) return entry.project_id === projectId
-    if (clientId) return entry.client_id === clientId
-    return false
+    if (!clientId) return false
+    if (clientOf(entry) !== clientId) return false
+    if (from && entry.entry_date < from) return false
+    if (to && entry.entry_date > to) return false
+    return true
   })
 
   const unbilledMinutes = matchingUnbilled.reduce((sum, entry) => sum + entry.minutes, 0)
@@ -114,9 +126,13 @@ function Invoices() {
     const value = Number(amount)
     if (!value) return
 
-    const payload = { amount: value, issue_date: todayISO() }
+    const payload = {
+      amount: value,
+      issue_date: todayISO(),
+      period_start: from || null,
+      period_end: to || null,
+    }
     if (clientId) payload.client_id = clientId
-    if (projectId) payload.project_id = projectId
     if (number.trim()) payload.number = number.trim()
 
     const { data, error } = await supabase.from('invoices').insert(payload).select().single()
@@ -200,38 +216,113 @@ function Invoices() {
 
       <form onSubmit={handleCreate}>
         <div className="field-row">
-          <select
-            value={clientId}
-            onChange={(e) => {
-              setClientId(e.target.value)
-              setProjectId('')
-            }}
-          >
-            <option value="">No client</option>
+          <select value={clientId} onChange={(e) => setClientId(e.target.value)}>
+            <option value="">Select client</option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>
                 {client.name}
               </option>
             ))}
           </select>
-          <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-            <option value="">No project</option>
-            {projects
-              .filter((project) => !clientId || project.client_id === clientId)
-              .map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-          </select>
-        </div>
-        <div className="field-row">
           <input
             type="text"
             value={number}
             onChange={(e) => setNumber(e.target.value)}
             placeholder="invoice number"
           />
+        </div>
+
+        <div className="field-row">
+          <label className="filter-toggle">
+            From
+            <input
+              type="date"
+              className="inline-select"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </label>
+          <label className="filter-toggle">
+            To
+            <input
+              type="date"
+              className="inline-select"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="row-action-btn"
+            onClick={() => {
+              const month = todayISO().slice(0, 7)
+              setFrom(`${month}-01`)
+              setTo(todayISO())
+            }}
+          >
+            This month
+          </button>
+          <button
+            type="button"
+            className="row-action-btn"
+            onClick={() => {
+              const date = new Date(`${todayISO().slice(0, 7)}-01T12:00:00`)
+              date.setMonth(date.getMonth() - 1)
+              const month = date.toISOString().slice(0, 7)
+              const end = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+              setFrom(`${month}-01`)
+              setTo(end.toISOString().slice(0, 10))
+            }}
+          >
+            Last month
+          </button>
+        </div>
+
+        {clientId && (
+          <div className="card invoice-preview">
+            <div className="project-scope-header">
+              <h3>Sessions in this window</h3>
+              <span className="list-row-sub">
+                {formatHours(unbilledMinutes)} · {formatMoney(unbilledValue)}
+              </span>
+            </div>
+
+            {matchingUnbilled.length === 0 ? (
+              <p className="empty-text">
+                No unbilled time for this client between those dates.
+              </p>
+            ) : (
+              <ul className="list">
+                {matchingUnbilled.map((entry) => {
+                  const rate = rateFor(entry)
+
+                  return (
+                    <li key={entry.id} className="list-row">
+                      <div className="list-row-main">
+                        <span className="list-row-title">{entry.notes || 'Session'}</span>
+                        <span className="list-row-sub task-meta">
+                          <span>{entry.entry_date}</span>
+                          <span>{formatHours(entry.minutes)}</span>
+                          {projectFor(entry.project_id) && (
+                            <span>{projectFor(entry.project_id).name}</span>
+                          )}
+                          {rate && <span>{formatMoney(rate)}/h</span>}
+                        </span>
+                      </div>
+                      {rate && (
+                        <span className="money">
+                          {formatMoney((entry.minutes / 60) * Number(rate))}
+                        </span>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="field-row">
           <input
             type="number"
             step="0.01"
@@ -239,23 +330,21 @@ function Invoices() {
             onChange={(e) => setAmount(e.target.value)}
             placeholder="amount"
           />
+          <button
+            type="button"
+            className="row-action-btn"
+            onClick={() => setAmount(unbilledValue.toFixed(2))}
+            disabled={unbilledValue === 0}
+          >
+            Use tracked time
+          </button>
           <button type="submit">Create invoice</button>
         </div>
 
-        {matchingUnbilled.length > 0 && (
-          <div className="unbilled-hint">
-            <p className="list-row-sub">
-              {formatHours(unbilledMinutes)} unbilled here — worth {formatMoney(unbilledValue)}.
-            </p>
-            <button
-              type="button"
-              className="row-action-btn"
-              onClick={() => setAmount(unbilledValue.toFixed(2))}
-            >
-              Use that amount
-            </button>
-          </div>
-        )}
+        <p className="list-row-sub">
+          Creating it attaches every session above, so they stop showing as unbilled and
+          stay listed on the invoice.
+        </p>
       </form>
 
       {awaitingIncome.length > 0 && (
@@ -309,6 +398,11 @@ function Invoices() {
                           due {formatDueDate(invoice.due_date)}
                         </span>
                       )}
+                      {invoice.period_start && (
+                        <span>
+                          {invoice.period_start} → {invoice.period_end}
+                        </span>
+                      )}
                       {invoice.status === 'paid' && invoice.paid_date && (
                         <span>paid {invoice.paid_date}</span>
                       )}
@@ -326,6 +420,41 @@ function Invoices() {
 
                 {editing && (
                   <div className="learning-detail">
+                    {allEntries.filter((entry) => entry.invoice_id === invoice.id).length > 0 && (
+                      <>
+                        <h4>Sessions on this invoice</h4>
+                        <ul className="list">
+                          {allEntries
+                            .filter((entry) => entry.invoice_id === invoice.id)
+                            .map((entry) => {
+                              const rate = rateFor(entry)
+
+                              return (
+                                <li key={entry.id} className="list-row">
+                                  <div className="list-row-main">
+                                    <span className="list-row-title">
+                                      {entry.notes || 'Session'}
+                                    </span>
+                                    <span className="list-row-sub task-meta">
+                                      <span>{entry.entry_date}</span>
+                                      <span>{formatHours(entry.minutes)}</span>
+                                      {projectFor(entry.project_id) && (
+                                        <span>{projectFor(entry.project_id).name}</span>
+                                      )}
+                                    </span>
+                                  </div>
+                                  {rate && (
+                                    <span className="money">
+                                      {formatMoney((entry.minutes / 60) * Number(rate))}
+                                    </span>
+                                  )}
+                                </li>
+                              )
+                            })}
+                        </ul>
+                      </>
+                    )}
+
                     <div className="task-controls">
                       <select
                         className="inline-select"

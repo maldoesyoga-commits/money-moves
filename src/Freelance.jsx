@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, NavLink } from 'react-router-dom'
 import Clients from './Clients'
 import FreelanceProjects from './FreelanceProjects'
+import FreelanceProjectDetail from './FreelanceProjectDetail'
 import TimeLog from './TimeLog'
 import Invoices from './Invoices'
 
@@ -35,6 +36,7 @@ function Freelance() {
       <Routes>
         <Route path="/" element={<Clients />} />
         <Route path="projects" element={<FreelanceProjects />} />
+        <Route path="projects/:projectId" element={<FreelanceProjectDetail />} />
         <Route path="time" element={<TimeLog />} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="*" element={<Navigate to="/freelance" replace />} />

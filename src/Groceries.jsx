@@ -4,34 +4,27 @@ import { supabase } from './lib/supabase'
 import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import FoodBudget from './FoodBudget'
+import { AISLES, STATUSES, statusTone, onShoppingList, ensurePantryItem } from './lib/pantry'
 import { report } from './lib/report'
 
-const AISLES = [
-  { value: 'produce', label: 'Produce' },
-  { value: 'protein', label: 'Protein' },
-  { value: 'dairy', label: 'Dairy' },
-  { value: 'pantry', label: 'Pantry' },
-  { value: 'frozen', label: 'Frozen' },
-  { value: 'household', label: 'Household' },
-  { value: 'other', label: 'Other' },
-]
-
+// The shopping list is a view of the pantry, not a list of its own. Nothing is
+// created or deleted here — picking something up flips its status back to
+// "have", which is what takes it off the list.
 function Groceries() {
   const [items, setItems] = useState([])
-  const [showGot, setShowGot] = useState(false)
-
+  const [showAllLow, setShowAllLow] = useState(false)
   const [name, setName] = useState('')
   const [aisle, setAisle] = useState('produce')
-  const [cost, setCost] = useState('')
 
-  const loadItems = useCallback(async () => {
+  const load = useCallback(async () => {
     const { data, error } = await supabase
-      .from('grocery_items')
+      .from('pantry_items')
       .select('*')
-      .order('created_at')
+      .order('aisle')
+      .order('name')
 
     if (error) {
-      report('Failed to load grocery items', error)
+      report('Failed to load the shopping list', error)
       return
     }
 
@@ -39,74 +32,75 @@ function Groceries() {
   }, [])
 
   useEffect(() => {
-    loadItems()
-  }, [loadItems])
+    load()
+  }, [load])
 
-  async function handleAdd(e) {
+  async function addItem(e) {
     e.preventDefault()
 
     const trimmed = name.trim()
     if (!trimmed) return
 
-    const payload = { name: trimmed, aisle }
-    if (cost) payload.est_cost = Number(cost)
-
-    const { error } = await supabase.from('grocery_items').insert(payload)
+    const { item, created, error } = await ensurePantryItem(trimmed, { aisle, status: 'out' })
 
     if (error) {
-      report('Failed to add grocery item', error)
+      report('Failed to add item', error)
       return
     }
 
+    // Already in the pantry — mark it needed rather than making a second row.
+    if (!created && item.status === 'have') {
+      await supabase.from('pantry_items').update({ status: 'out' }).eq('id', item.id)
+    }
+
     setName('')
-    setCost('')
-    loadItems()
+    load()
   }
 
   async function updateItem(id, patch) {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+    const next = { ...patch, updated_at: new Date().toISOString() }
 
-    const { error } = await supabase.from('grocery_items').update(patch).eq('id', id)
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...next } : item)))
+
+    const { error } = await supabase.from('pantry_items').update(next).eq('id', id)
 
     if (error) {
-      report('Failed to update grocery item', error)
-      loadItems()
+      report('Failed to update item', error)
+      load()
     }
   }
 
-  async function deleteItem(id) {
-    setItems((prev) => prev.filter((item) => item.id !== id))
+  function gotIt(item) {
+    updateItem(item.id, { status: 'have', needed: false, needed_note: null })
+  }
 
-    const { error } = await supabase.from('grocery_items').delete().eq('id', id)
+  async function clearFlags() {
+    const flagged = items.filter((item) => item.needed).map((item) => item.id)
+    if (flagged.length === 0) return
+
+    setItems((prev) => prev.map((item) => ({ ...item, needed: false, needed_note: null })))
+
+    const { error } = await supabase
+      .from('pantry_items')
+      .update({ needed: false, needed_note: null })
+      .in('id', flagged)
 
     if (error) {
-      report('Failed to delete grocery item', error)
-      loadItems()
+      report('Failed to clear recipe flags', error)
+      load()
     }
   }
 
-  async function clearGot() {
-    const gotIds = items.filter((item) => item.got_it).map((item) => item.id)
-    if (gotIds.length === 0) return
-
-    setItems((prev) => prev.filter((item) => !item.got_it))
-
-    const { error } = await supabase.from('grocery_items').delete().in('id', gotIds)
-
-    if (error) {
-      report('Failed to clear list', error)
-      loadItems()
-    }
-  }
-
-  const visible = items.filter((item) => showGot || !item.got_it)
-  const outstanding = items.filter((item) => !item.got_it)
-  const estimate = outstanding.reduce((sum, item) => sum + Number(item.est_cost || 0), 0)
+  const list = items.filter((item) =>
+    showAllLow ? onShoppingList(item) || item.status === 'low' : onShoppingList(item),
+  )
+  const estimate = list.reduce((sum, item) => sum + Number(item.est_cost || 0), 0)
+  const flagged = items.filter((item) => item.needed).length
 
   return (
     <div className="card">
       <div className="project-scope-header">
-        <h2>Groceries</h2>
+        <h2>Shopping list</h2>
         <Link to="/money/transactions" className="row-action-btn">
           Food spending
         </Link>
@@ -114,58 +108,64 @@ function Groceries() {
 
       <div className="total-row">
         <p>
-          {outstanding.length} item{outstanding.length === 1 ? '' : 's'} to get
+          {list.length} item{list.length === 1 ? '' : 's'} to get
+          {flagged > 0 && ` · ${flagged} flagged by a recipe`}
         </p>
         {estimate > 0 && <span className="money">≈ {formatMoney(estimate)}</span>}
       </div>
 
       <FoodBudget estimate={estimate} />
 
-      <form className="quick-add" onSubmit={handleAdd}>
+      <form className="field-row" onSubmit={addItem}>
         <input
           type="text"
-          className="quick-add-title"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Add to the list"
+          placeholder="need something that isn't here?"
         />
-        <div className="field-row">
-          <select value={aisle} onChange={(e) => setAisle(e.target.value)}>
-            {AISLES.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            step="0.01"
-            value={cost}
-            onChange={(e) => setCost(e.target.value)}
-            placeholder="est. cost"
-          />
-          <button type="submit">Add</button>
-        </div>
+        <select className="inline-select" value={aisle} onChange={(e) => setAisle(e.target.value)}>
+          {AISLES.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <button type="submit">Add</button>
       </form>
+
+      <p className="list-row-sub">
+        Adding here puts it in the pantry too, marked Out. Nothing gets deleted when you
+        shop — ticking an item sets it back to Have, which is what takes it off this
+        list.
+      </p>
 
       <div className="transaction-filter-bar">
         <label className="filter-toggle">
-          <input type="checkbox" checked={showGot} onChange={(e) => setShowGot(e.target.checked)} />
-          Show what I&apos;ve got
+          <input
+            type="checkbox"
+            checked={showAllLow}
+            onChange={(e) => setShowAllLow(e.target.checked)}
+          />
+          Include everything running low
         </label>
-        <button type="button" className="row-action-btn" onClick={clearGot}>
-          Clear picked up
-        </button>
+        {flagged > 0 && (
+          <button type="button" className="row-action-btn" onClick={clearFlags}>
+            Clear recipe flags
+          </button>
+        )}
+        <Link to="/household/meals/pantry" className="row-action-btn">
+          Edit pantry
+        </Link>
       </div>
 
-      {visible.length === 0 ? (
-        <EmptyState icon="🛒" title="List is empty">
-          Add items above, or send a meal&apos;s ingredients over from the Meals tab.
-          Tick things off as you shop.
+      {list.length === 0 ? (
+        <EmptyState icon="🛒" title="Nothing to buy">
+          Everything in the pantry is marked as in stock. Open a recipe and hit Check
+          pantry and anything missing lands here.
         </EmptyState>
       ) : (
         AISLES.map((group) => {
-          const groupItems = visible.filter((item) => item.aisle === group.value)
+          const groupItems = list.filter((item) => item.aisle === group.value)
           if (groupItems.length === 0) return null
 
           return (
@@ -173,30 +173,39 @@ function Groceries() {
               <h3>{group.label}</h3>
               <ul className="list">
                 {groupItems.map((item) => (
-                  <li
-                    key={item.id}
-                    className={`list-row task-row${item.got_it ? ' task-done' : ''}`}
-                  >
+                  <li key={item.id} className="list-row task-row">
                     <div className="task-row-body">
                       <button
                         type="button"
-                        className={`task-check${item.got_it ? ' checked' : ''}`}
-                        onClick={() => updateItem(item.id, { got_it: !item.got_it })}
-                        aria-label={item.got_it ? 'Put back' : 'Got it'}
-                      >
-                        {item.got_it ? '✓' : ''}
-                      </button>
+                        className="task-check"
+                        onClick={() => gotIt(item)}
+                        aria-label="Got it"
+                      />
                       <div className="list-row-main task-main">
-                        <span className="list-row-title task-title">{item.name}</span>
-                        {item.quantity && <span className="list-row-sub">{item.quantity}</span>}
+                        <span className="list-row-title task-title">
+                          {item.name}
+                          {item.staple && <span className="priority-pill">staple</span>}
+                        </span>
+                        <span className="list-row-sub task-meta">
+                          <span className={statusTone(item.status)}>
+                            {STATUSES.find((s) => s.value === item.status)?.label}
+                          </span>
+                          {item.unit && <span>{item.unit}</span>}
+                          {item.needed_note && <span>for {item.needed_note}</span>}
+                        </span>
                       </div>
                       {item.est_cost && <span className="money">{formatMoney(item.est_cost)}</span>}
                       <button
                         type="button"
-                        className="row-action-btn row-action-btn-danger"
-                        onClick={() => deleteItem(item.id)}
+                        className="row-action-btn"
+                        onClick={() =>
+                          updateItem(item.id, {
+                            status: item.status === 'out' ? 'low' : 'out',
+                          })
+                        }
+                        title="Toggle between out and running low"
                       >
-                        Delete
+                        {item.status === 'out' ? 'Low' : 'Out'}
                       </button>
                     </div>
                   </li>

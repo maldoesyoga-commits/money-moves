@@ -1,19 +1,25 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { cycleEnd, quarterOf, CYCLE_WEEKS } from './lib/twelveWeek'
 import EmptyState from './EmptyState'
+import GoalsGlossary from './GoalsGlossary'
+import MilestoneList from './MilestoneList'
 import { report } from './lib/report'
 
 const COLORS = ['#3f6b5c', '#b87333', '#4e6e8a', '#bf8f6b', '#6e7a75']
 
 function GoalsPlan({ cycle, onCycleChange }) {
   const [goals, setGoals] = useState([])
+  const [objectives, setObjectives] = useState([])
   const [tactics, setTactics] = useState([])
+  const [projects, setProjects] = useState([])
+  const [habits, setHabits] = useState([])
   const [openId, setOpenId] = useState(null)
 
   const [vision, setVision] = useState(cycle.vision || '')
   const [goalTitle, setGoalTitle] = useState('')
-  const [tacticDrafts, setTacticDrafts] = useState({})
+  const [drafts, setDrafts] = useState({})
 
   const load = useCallback(async () => {
     const { data: goalRows, error } = await supabase
@@ -29,24 +35,33 @@ function GoalsPlan({ cycle, onCycleChange }) {
 
     setGoals(goalRows)
 
+    // Projects and habits load either way — the pickers need the unlinked ones.
+    const [{ data: projectRows }, { data: habitRows }] = await Promise.all([
+      supabase.from('projects').select('*').order('sort_order').order('created_at'),
+      supabase.from('habits').select('*').order('sort_order').order('created_at'),
+    ])
+
+    setProjects(projectRows || [])
+    setHabits(habitRows || [])
+
     const ids = goalRows.map((goal) => goal.id)
     if (ids.length === 0) {
       setTactics([])
+      setObjectives([])
       return
     }
 
-    const { data: tacticRows, error: tacticError } = await supabase
-      .from('twy_tactics')
-      .select('*')
-      .in('goal_id', ids)
-      .order('sort_order')
+    const [{ data: tacticRows, error: tacticError }, { data: objectiveRows, error: objectiveError }] =
+      await Promise.all([
+        supabase.from('twy_tactics').select('*').in('goal_id', ids).order('sort_order'),
+        supabase.from('twy_objectives').select('*').in('goal_id', ids).order('sort_order'),
+      ])
 
-    if (tacticError) {
-      report('Failed to load tactics', tacticError)
-      return
-    }
+    if (tacticError) report('Failed to load tactics', tacticError)
+    else setTactics(tacticRows)
 
-    setTactics(tacticRows)
+    if (objectiveError) report('Failed to load objectives', objectiveError)
+    else setObjectives(objectiveRows)
   }, [cycle.id])
 
   useEffect(() => {
@@ -61,6 +76,8 @@ function GoalsPlan({ cycle, onCycleChange }) {
 
     if (error) report('Failed to save vision', error)
   }
+
+  // --- goals -----------------------------------------------------------------
 
   async function addGoal(e) {
     e.preventDefault()
@@ -102,26 +119,81 @@ function GoalsPlan({ cycle, onCycleChange }) {
 
     if (error) {
       report('Failed to delete goal', error)
+    }
+
+    // Projects and habits survive the goal — reload so their links clear.
+    load()
+  }
+
+  // --- objectives ------------------------------------------------------------
+
+  async function addObjective(e, goalId) {
+    e.preventDefault()
+
+    const trimmed = (draftFor(goalId, 'objective', '') || '').trim()
+    if (!trimmed) return
+
+    const { error } = await supabase.from('twy_objectives').insert({
+      goal_id: goalId,
+      title: trimmed,
+      sort_order: objectives.filter((row) => row.goal_id === goalId).length,
+    })
+
+    if (error) {
+      report('Failed to add objective', error)
+      return
+    }
+
+    setDraft(goalId, 'objective', '')
+    load()
+  }
+
+  async function toggleObjective(objective) {
+    const patch = {
+      done: !objective.done,
+      done_at: objective.done ? null : new Date().toISOString(),
+    }
+
+    setObjectives((prev) =>
+      prev.map((row) => (row.id === objective.id ? { ...row, ...patch } : row)),
+    )
+
+    const { error } = await supabase.from('twy_objectives').update(patch).eq('id', objective.id)
+
+    if (error) {
+      report('Failed to update objective', error)
       load()
     }
   }
 
+  async function deleteObjective(id) {
+    setObjectives((prev) => prev.filter((row) => row.id !== id))
+
+    const { error } = await supabase.from('twy_objectives').delete().eq('id', id)
+
+    if (error) {
+      report('Failed to delete objective', error)
+      load()
+    }
+  }
+
+  // --- tactics ---------------------------------------------------------------
+
   async function addTactic(e, goalId) {
     e.preventDefault()
 
-    const draft = tacticDrafts[goalId] || {}
-    const trimmed = (draft.title || '').trim()
+    const trimmed = (draftFor(goalId, 'title', '') || '').trim()
     if (!trimmed) return
 
     const payload = {
       goal_id: goalId,
       title: trimmed,
-      cadence: draft.cadence || 'weekly',
-      times_per_week: Number(draft.times || 1),
+      cadence: draftFor(goalId, 'cadence', 'weekly'),
+      times_per_week: Number(draftFor(goalId, 'times', 1)) || 1,
       sort_order: tactics.filter((tactic) => tactic.goal_id === goalId).length,
     }
 
-    if (payload.cadence === 'once') payload.due_week = Number(draft.week || 1)
+    if (payload.cadence === 'once') payload.due_week = Number(draftFor(goalId, 'week', 1))
 
     const { error } = await supabase.from('twy_tactics').insert(payload)
 
@@ -130,7 +202,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
       return
     }
 
-    setTacticDrafts((prev) => ({ ...prev, [goalId]: {} }))
+    setDrafts((prev) => ({ ...prev, [goalId]: {} }))
     load()
   }
 
@@ -156,6 +228,85 @@ function GoalsPlan({ cycle, onCycleChange }) {
     }
   }
 
+  // --- linked projects & habits ---------------------------------------------
+
+  async function setProjectGoal(projectId, goalId) {
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.id === projectId ? { ...project, twy_goal_id: goalId } : project,
+      ),
+    )
+
+    const { error } = await supabase
+      .from('projects')
+      .update({ twy_goal_id: goalId })
+      .eq('id', projectId)
+
+    if (error) {
+      report('Failed to link project', error)
+      load()
+    }
+  }
+
+  async function createProjectForGoal(e, goal) {
+    e.preventDefault()
+
+    const trimmed = (draftFor(goal.id, 'project', '') || '').trim()
+    if (!trimmed) return
+
+    const { error } = await supabase.from('projects').insert({
+      name: trimmed,
+      twy_goal_id: goal.id,
+      color: goal.color,
+      sort_order: projects.length,
+    })
+
+    if (error) {
+      report('Failed to create project', error)
+      return
+    }
+
+    setDraft(goal.id, 'project', '')
+    load()
+  }
+
+  async function setHabitGoal(habitId, goalId) {
+    setHabits((prev) =>
+      prev.map((habit) => (habit.id === habitId ? { ...habit, twy_goal_id: goalId } : habit)),
+    )
+
+    const { error } = await supabase
+      .from('habits')
+      .update({ twy_goal_id: goalId })
+      .eq('id', habitId)
+
+    if (error) {
+      report('Failed to link habit', error)
+      load()
+    }
+  }
+
+  async function createHabitForGoal(e, goal) {
+    e.preventDefault()
+
+    const trimmed = (draftFor(goal.id, 'habit', '') || '').trim()
+    if (!trimmed) return
+
+    const { error } = await supabase.from('habits').insert({
+      name: trimmed,
+      twy_goal_id: goal.id,
+      sort_order: habits.length,
+    })
+
+    if (error) {
+      report('Failed to create habit', error)
+      return
+    }
+
+    setDraft(goal.id, 'habit', '')
+    load()
+  }
+
   async function finishCycle() {
     const { error } = await supabase
       .from('twy_cycles')
@@ -171,15 +322,17 @@ function GoalsPlan({ cycle, onCycleChange }) {
   }
 
   function draftFor(goalId, key, fallback) {
-    return tacticDrafts[goalId]?.[key] ?? fallback
+    return drafts[goalId]?.[key] ?? fallback
   }
 
   function setDraft(goalId, key, value) {
-    setTacticDrafts((prev) => ({ ...prev, [goalId]: { ...prev[goalId], [key]: value } }))
+    setDrafts((prev) => ({ ...prev, [goalId]: { ...prev[goalId], [key]: value } }))
   }
 
   return (
     <>
+      <GoalsGlossary />
+
       <div className="card">
         <h2>Vision</h2>
         <p className="list-row-sub">
@@ -230,7 +383,12 @@ function GoalsPlan({ cycle, onCycleChange }) {
       </div>
 
       {goals.map((goal) => {
+        const goalObjectives = objectives.filter((row) => row.goal_id === goal.id)
         const goalTactics = tactics.filter((tactic) => tactic.goal_id === goal.id)
+        const goalProjects = projects.filter((project) => project.twy_goal_id === goal.id)
+        const goalHabits = habits.filter((habit) => habit.twy_goal_id === goal.id)
+        const freeProjects = projects.filter((project) => !project.twy_goal_id)
+        const freeHabits = habits.filter((habit) => !habit.twy_goal_id && habit.active)
         const open = openId === goal.id
         const pct =
           goal.lag_target && Number(goal.lag_target) > 0
@@ -255,6 +413,8 @@ function GoalsPlan({ cycle, onCycleChange }) {
                 {open ? 'Close' : 'Edit'}
               </button>
             </div>
+
+            {goal.aim && <p className="list-row-sub">Aim — {goal.aim}</p>}
 
             {goal.lag_measure && (
               <>
@@ -281,12 +441,27 @@ function GoalsPlan({ cycle, onCycleChange }) {
                   onChange={(e) => updateGoal(goal.id, { title: e.target.value })}
                   placeholder="goal"
                 />
+
+                <p className="budget-gentle-note">
+                  <strong>Aim</strong> — the broad ambition this goal is a slice of. One
+                  line, no numbers, no deadline: &ldquo;Hope Heals supports itself without
+                  me chasing every client.&rdquo; The goal above is that aim narrowed to
+                  twelve weeks with a number on it.
+                </p>
+                <textarea
+                  rows="2"
+                  value={goal.aim || ''}
+                  onChange={(e) => updateGoal(goal.id, { aim: e.target.value || null })}
+                  placeholder="the ambition behind this — what you're really reaching for"
+                />
+
                 <textarea
                   rows="2"
                   value={goal.why || ''}
                   onChange={(e) => updateGoal(goal.id, { why: e.target.value || null })}
                   placeholder="why this one matters — you'll need this in week 7"
                 />
+
                 <div className="task-controls">
                   <input
                     type="text"
@@ -332,6 +507,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
                     Delete goal
                   </button>
                 </div>
+
                 <div className="color-picker-row">
                   {COLORS.map((swatch) => (
                     <button
@@ -347,9 +523,66 @@ function GoalsPlan({ cycle, onCycleChange }) {
               </div>
             )}
 
+            <h3>Objectives</h3>
+            <p className="list-row-sub">
+              The milestones that have to be true for this goal to land. Ticked off once
+              each — if it repeats every week, it belongs under Tactics.
+            </p>
+
+            {goalObjectives.length === 0 ? (
+              <p className="empty-text">No objectives yet.</p>
+            ) : (
+              <ul className="list">
+                {goalObjectives.map((objective) => (
+                  <li
+                    key={objective.id}
+                    className={`list-row task-row${objective.done ? ' task-done' : ''}`}
+                  >
+                    <div className="task-row-body">
+                      <button
+                        type="button"
+                        className={`task-check${objective.done ? ' checked' : ''}`}
+                        onClick={() => toggleObjective(objective)}
+                        aria-label={objective.done ? 'Reopen' : 'Mark done'}
+                      >
+                        {objective.done ? '✓' : ''}
+                      </button>
+                      <div className="list-row-main task-main">
+                        <span className="list-row-title task-title">{objective.title}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="row-action-btn row-action-btn-danger"
+                        onClick={() => deleteObjective(objective.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <form className="field-row" onSubmit={(e) => addObjective(e, goal.id)}>
+              <input
+                type="text"
+                value={draftFor(goal.id, 'objective', '')}
+                onChange={(e) => setDraft(goal.id, 'objective', e.target.value)}
+                placeholder="objective — a milestone, done or not done"
+              />
+              <button type="submit" className="btn-secondary">
+                Add objective
+              </button>
+            </form>
+
+            <MilestoneList
+              goalId={goal.id}
+              hint="Moments worth marking on the way to this goal. Objectives are what must be true; milestones are what you'll remember."
+            />
+
             <h3>Tactics</h3>
             <p className="list-row-sub">
-              The weekly actions. These are what you score yourself on.
+              The weekly actions. These are the only thing you score yourself on.
             </p>
 
             {goalTactics.length === 0 ? (
@@ -433,6 +666,136 @@ function GoalsPlan({ cycle, onCycleChange }) {
               )}
               <button type="submit" className="btn-secondary">
                 Add tactic
+              </button>
+            </form>
+
+            <h3>Projects</h3>
+            <p className="list-row-sub">
+              Work that belongs to this goal. Tasks stay in the planner — the goal just
+              borrows their progress for the scoreboard.
+            </p>
+
+            {goalProjects.length === 0 ? (
+              <p className="empty-text">No projects linked.</p>
+            ) : (
+              <ul className="list">
+                {goalProjects.map((project) => (
+                  <li key={project.id} className="list-row">
+                    <div className="task-row-body">
+                      <span
+                        className="project-dot"
+                        style={{ background: project.color || 'var(--text-soft)' }}
+                      />
+                      <div className="list-row-main task-main">
+                        <Link
+                          to={`/tasks/projects/${project.id}`}
+                          className="list-row-title project-link"
+                        >
+                          {project.name}
+                        </Link>
+                        <span className="list-row-sub">{project.status.replace('_', ' ')}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="row-action-btn"
+                        onClick={() => setProjectGoal(project.id, null)}
+                      >
+                        Unlink
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="task-controls">
+              <select
+                className="inline-select"
+                value=""
+                onChange={(e) => e.target.value && setProjectGoal(e.target.value, goal.id)}
+              >
+                <option value="">link an existing project…</option>
+                {freeProjects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <form className="field-row" onSubmit={(e) => createProjectForGoal(e, goal)}>
+              <input
+                type="text"
+                value={draftFor(goal.id, 'project', '')}
+                onChange={(e) => setDraft(goal.id, 'project', e.target.value)}
+                placeholder="or start a new project for this goal"
+              />
+              <button type="submit" className="btn-secondary">
+                Create project
+              </button>
+            </form>
+
+            <h3>Habits</h3>
+            <p className="list-row-sub">
+              The daily behaviour behind this goal. Ticked on the Daily tab as usual;
+              consistency shows up on the scoreboard.
+            </p>
+
+            {goalHabits.length === 0 ? (
+              <p className="empty-text">No habits linked.</p>
+            ) : (
+              <ul className="list">
+                {goalHabits.map((habit) => (
+                  <li key={habit.id} className={`list-row${habit.active ? '' : ' task-done'}`}>
+                    <div className="task-row-body">
+                      <div className="list-row-main task-main">
+                        <span className="list-row-title task-title">
+                          {habit.icon ? `${habit.icon} ` : ''}
+                          {habit.name}
+                        </span>
+                        <span className="list-row-sub">
+                          {habit.slot === 'any' ? 'any time' : habit.slot.toUpperCase()}
+                          {habit.active ? '' : ' · archived'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="row-action-btn"
+                        onClick={() => setHabitGoal(habit.id, null)}
+                      >
+                        Unlink
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="task-controls">
+              <select
+                className="inline-select"
+                value=""
+                onChange={(e) => e.target.value && setHabitGoal(e.target.value, goal.id)}
+              >
+                <option value="">link an existing habit…</option>
+                {freeHabits.map((habit) => (
+                  <option key={habit.id} value={habit.id}>
+                    {habit.icon ? `${habit.icon} ` : ''}
+                    {habit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <form className="field-row" onSubmit={(e) => createHabitForGoal(e, goal)}>
+              <input
+                type="text"
+                value={draftFor(goal.id, 'habit', '')}
+                onChange={(e) => setDraft(goal.id, 'habit', e.target.value)}
+                placeholder="or start a new habit for this goal"
+              />
+              <button type="submit" className="btn-secondary">
+                Create habit
               </button>
             </form>
           </div>

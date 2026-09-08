@@ -2,10 +2,12 @@ import { Routes, Route, Navigate, NavLink } from 'react-router-dom'
 import TaskList from './TaskList'
 import Projects from './Projects'
 import ProjectDetail from './ProjectDetail'
+import TaskTemplates from './TaskTemplates'
 
 const TABS = [
   { to: '/tasks', label: 'Tasks', end: true },
   { to: '/tasks/projects', label: 'Projects' },
+  { to: '/tasks/templates', label: 'Templates' },
 ]
 
 function Tasks() {
@@ -33,6 +35,7 @@ function Tasks() {
         <Route path="/" element={<TaskList />} />
         <Route path="projects" element={<Projects />} />
         <Route path="projects/:projectId" element={<ProjectDetail />} />
+        <Route path="templates" element={<TaskTemplates />} />
         <Route path="*" element={<Navigate to="/tasks" replace />} />
       </Routes>
     </section>

@@ -7,6 +7,7 @@ import TaskBoard from './TaskBoard'
 import TaskCalendar from './TaskCalendar'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
 import { REPEATS, REPEAT_LABEL, REPEAT_UNIT, nextOccurrence } from './lib/recurrence'
+import { applyTemplate } from './lib/taskTemplates'
 import { startFocus } from './lib/focus'
 import { report } from './lib/report'
 
@@ -18,6 +19,14 @@ const VIEWS = [
 ]
 
 const PRIORITY_LABEL = { high: 'High', med: 'Medium', low: 'Low' }
+
+const STATUS_LABEL = { todo: 'To do', doing: 'In progress', done: 'Done' }
+
+const STATUSES = [
+  { value: 'todo', label: 'To do' },
+  { value: 'doing', label: 'In progress' },
+  { value: 'done', label: 'Done' },
+]
 
 const MODES = [
   { key: 'list', label: 'List' },
@@ -46,6 +55,8 @@ function TaskList({ onChanged }) {
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [newProjectId, setNewProjectId] = useState('')
+  const [templates, setTemplates] = useState([])
+  const [templateNote, setTemplateNote] = useState(null)
 
   const loadTasks = useCallback(async () => {
     const { data, error } = await supabase
@@ -77,10 +88,21 @@ function TaskList({ onChanged }) {
     setProjects(data)
   }, [])
 
+  const loadTemplates = useCallback(async () => {
+    const { data } = await supabase
+      .from('task_templates')
+      .select('*')
+      .order('sort_order')
+      .order('created_at')
+
+    setTemplates(data || [])
+  }, [])
+
   useEffect(() => {
     loadTasks()
     loadProjects()
-  }, [loadTasks, loadProjects])
+    loadTemplates()
+  }, [loadTasks, loadProjects, loadTemplates])
 
   useEffect(() => {
     if (projectId) setNewProjectId(projectId)
@@ -117,6 +139,27 @@ function TaskList({ onChanged }) {
 
     setTitle('')
     setDueDate('')
+    loadTasks()
+    onChanged?.()
+  }
+
+  // Stamping out a template uses whatever date is sitting in the quick-add box,
+  // so you can set the anchor before applying rather than fixing dates after.
+  async function runTemplate(templateId) {
+    const template = templates.find((row) => row.id === templateId)
+    if (!template) return
+
+    const { count, error } = await applyTemplate(template, {
+      anchor: dueDate || todayISO(),
+      projectId: projectId || newProjectId || null,
+    })
+
+    if (error) {
+      report('Failed to apply template', error)
+      return
+    }
+
+    setTemplateNote(`Added ${count} ${count === 1 ? 'task' : 'tasks'} from ${template.name}.`)
     loadTasks()
     onChanged?.()
   }
@@ -269,7 +312,28 @@ function TaskList({ onChanged }) {
           )}
           <button type="submit">Add task</button>
         </div>
+        {templates.length > 0 && (
+          <div className="field-row">
+            <select
+              className="inline-select"
+              value=""
+              onChange={(e) => e.target.value && runTemplate(e.target.value)}
+            >
+              <option value="">apply a template…</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+            <Link to="/tasks/templates" className="row-action-btn">
+              Manage templates
+            </Link>
+          </div>
+        )}
       </form>
+
+      {templateNote && <p className="budget-gentle-note">{templateNote}</p>}
 
       <nav className="segmented-nav view-mode-nav">
         {MODES.map((option) => (
@@ -377,6 +441,16 @@ function TaskList({ onChanged }) {
                       <span className={overdue ? 'task-overdue' : undefined}>
                         {formatDueDate(task.due_date)}
                       </span>
+                      <span
+                        className="priority-pill"
+                        style={
+                          task.status === 'doing'
+                            ? { background: 'var(--sage)', color: 'var(--bg, #fff)' }
+                            : undefined
+                        }
+                      >
+                        {STATUS_LABEL[task.status]}
+                      </span>
                       {task.priority && <span className={`priority-pill priority-${task.priority}`}>
                         {PRIORITY_LABEL[task.priority]}
                       </span>}
@@ -392,6 +466,21 @@ function TaskList({ onChanged }) {
                     </span>
                   </div>
 
+                  {!done && (
+                    <button
+                      type="button"
+                      className="row-action-btn"
+                      onClick={() =>
+                        updateTask(task.id, {
+                          status: task.status === 'doing' ? 'todo' : 'doing',
+                        })
+                      }
+                      title={task.status === 'doing' ? 'Back to to-do' : 'Mark in progress'}
+                    >
+                      {task.status === 'doing' ? 'Pause' : 'Start'}
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     className="row-action-btn"
@@ -403,6 +492,22 @@ function TaskList({ onChanged }) {
 
                 {open && (
                   <div className="task-controls">
+                    <select
+                      className="inline-select"
+                      value={task.status}
+                      onChange={(e) =>
+                        updateTask(task.id, {
+                          status: e.target.value,
+                          done_at: e.target.value === 'done' ? new Date().toISOString() : null,
+                        })
+                      }
+                    >
+                      {STATUSES.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                     <input
                       type="date"
                       className="inline-select"

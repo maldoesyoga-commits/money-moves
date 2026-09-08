@@ -26,7 +26,16 @@ function PlanningYear({ start, end, onPickMonth, onPickQuarter }) {
   const [focusDraft, setFocusDraft] = useState('')
 
   const load = useCallback(async () => {
-    const [taskRes, contentRes, invoiceRes, planRes, cycleRes] = await Promise.all([
+    const [
+      taskRes,
+      contentRes,
+      invoiceRes,
+      planRes,
+      cycleRes,
+      projectRes,
+      flProjectRes,
+      milestoneRes,
+    ] = await Promise.all([
       supabase.from('tasks').select('id, status, due_date, done_at'),
       supabase
         .from('content_items')
@@ -36,6 +45,10 @@ function PlanningYear({ start, end, onPickMonth, onPickQuarter }) {
       supabase.from('invoices').select('id, amount, status, issue_date, paid_date'),
       supabase.from('plan_entries').select('*').eq('horizon', 'year').eq('start_date', start),
       supabase.from('twy_cycles').select('*'),
+      // Both project planners — the year should show deadlines from each.
+      supabase.from('projects').select('id, name, status, start_date, target_date'),
+      supabase.from('freelance_projects').select('id, name, status, due_date, client_id'),
+      supabase.from('milestones').select('id, title, target_date, achieved, achieved_on'),
     ])
 
     if (taskRes.error) report('Failed to load tasks', taskRes.error)
@@ -50,6 +63,9 @@ function PlanningYear({ start, end, onPickMonth, onPickQuarter }) {
       content: contentRes.error ? [] : contentRes.data || [],
       invoices: invoiceRes.error ? [] : invoiceRes.data || [],
       cycles: cycleRes.error ? [] : cycleRes.data || [],
+      projects: projectRes.error ? [] : projectRes.data || [],
+      flProjects: flProjectRes.error ? [] : flProjectRes.data || [],
+      milestones: milestoneRes.error ? [] : milestoneRes.data || [],
     })
   }, [start, end])
 
@@ -122,6 +138,21 @@ function PlanningYear({ start, end, onPickMonth, onPickQuarter }) {
       .filter((invoice) => invoice.status === 'paid')
       .reduce((sum, invoice) => sum + Number(invoice.amount), 0)
 
+    // Deadlines landing in this month, from both planners.
+    const ownDeadlines = data.projects.filter(
+      (project) => project.target_date && project.target_date >= from && project.target_date <= to,
+    )
+    const ownStarts = data.projects.filter(
+      (project) => project.start_date && project.start_date >= from && project.start_date <= to,
+    )
+    const flDeadlines = data.flProjects.filter(
+      (project) => project.due_date && project.due_date >= from && project.due_date <= to,
+    )
+
+    const reached = data.milestones.filter(
+      (row) => row.achieved && row.achieved_on >= from && row.achieved_on <= to,
+    )
+
     const cycle = data.cycles.find(
       (row) => row.start_date <= to && row.start_date >= iso(new Date(year - 1, index, 1)),
     )
@@ -137,6 +168,11 @@ function PlanningYear({ start, end, onPickMonth, onPickQuarter }) {
       planned: planned.length,
       posted: posted.length,
       paid,
+      reached: reached.length,
+      reachedNames: reached.map((row) => row.title),
+      deadlines: ownDeadlines.length + flDeadlines.length,
+      starts: ownStarts.length,
+      deadlineNames: [...ownDeadlines, ...flDeadlines].map((project) => project.name),
       cycleStart: cycle && cycle.start_date >= from && cycle.start_date <= to ? cycle : null,
       isNow: from <= today && to >= today,
       isPast: to < today,
@@ -233,6 +269,23 @@ function PlanningYear({ start, end, onPickMonth, onPickQuarter }) {
                     {month.planned > 0 && (
                       <span className="year-month-row">
                         <span className="year-month-figure">{month.planned}</span> posts
+                      </span>
+                    )}
+                    {month.deadlines > 0 && (
+                      <span className="year-month-row" title={month.deadlineNames.join(', ')}>
+                        <span className="year-month-figure">{month.deadlines}</span>{' '}
+                        {month.deadlines === 1 ? 'deadline' : 'deadlines'}
+                      </span>
+                    )}
+                    {month.reached > 0 && (
+                      <span className="year-month-row" title={month.reachedNames.join(', ')}>
+                        <span className="year-month-figure">{month.reached}</span>{' '}
+                        {month.reached === 1 ? 'milestone' : 'milestones'}
+                      </span>
+                    )}
+                    {month.starts > 0 && (
+                      <span className="year-month-row">
+                        <span className="year-month-figure">{month.starts}</span> starting
                       </span>
                     )}
                     {month.paid > 0 && (

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
@@ -22,7 +23,8 @@ function FreelanceProjects() {
 
   const [name, setName] = useState('')
   const [clientId, setClientId] = useState('')
-  const [dueDate, setDueDate] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   const loadProjects = useCallback(async () => {
     const { data, error } = await supabase
@@ -81,7 +83,8 @@ function FreelanceProjects() {
 
     const payload = { name: trimmed }
     if (clientId) payload.client_id = clientId
-    if (dueDate) payload.due_date = dueDate
+    if (startDate) payload.start_date = startDate
+    if (endDate) payload.end_date = endDate
 
     const { error } = await supabase.from('freelance_projects').insert(payload)
 
@@ -91,7 +94,8 @@ function FreelanceProjects() {
     }
 
     setName('')
-    setDueDate('')
+    setStartDate('')
+    setEndDate('')
     loadProjects()
   }
 
@@ -147,8 +151,27 @@ function FreelanceProjects() {
               </option>
             ))}
           </select>
-          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           <button type="submit">Add project</button>
+        </div>
+        <div className="field-row">
+          <label className="filter-toggle">
+            Starts
+            <input
+              type="date"
+              className="inline-select"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </label>
+          <label className="filter-toggle">
+            Ends
+            <input
+              type="date"
+              className="inline-select"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </label>
         </div>
       </form>
 
@@ -181,14 +204,24 @@ function FreelanceProjects() {
               <li key={project.id} className="list-row project-row">
                 <div className="task-row-body">
                   <div className="list-row-main task-main">
-                    <span className="list-row-title">{project.name}</span>
+                    <Link
+                      to={`/freelance/projects/${project.id}`}
+                      className="list-row-title project-link"
+                    >
+                      {project.name}
+                    </Link>
                     <span className="list-row-sub task-meta">
                       <span>{clientFor(project.client_id)?.name || 'No client'}</span>
+                      {(project.start_date || project.end_date) && (
+                        <span>
+                          {project.start_date || '…'} → {project.end_date || '…'}
+                        </span>
+                      )}
                       {minutes > 0 && <span>{formatHours(minutes)}</span>}
                       {earned !== null && minutes > 0 && <span>{formatMoney(earned)}</span>}
                       {project.due_date && (
                         <span className={late ? 'task-overdue' : undefined}>
-                          {formatDueDate(project.due_date)}
+                          deadline {formatDueDate(project.due_date)}
                         </span>
                       )}
                     </span>
