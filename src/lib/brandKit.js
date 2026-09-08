@@ -15,6 +15,10 @@ export const BRAND_KITS = {
     name: 'Creating Mal',
     tagline: "We don't let shame live here anymore.",
     ready: true,
+    // 'Hanging' is Mal's title font (self-hosted once the file is added);
+    // Lora is the loaded fallback + body font.
+    headingFont: "'Hanging', 'Lora', Georgia, serif",
+    bodyFont: "'Lora', Georgia, serif",
     palette: [
       { name: 'Soft Sand', hex: '#F6EFE7', note: 'warmth, safety, foundation' },
       { name: 'Muted Terracotta', hex: '#C97A63', note: 'grounding, earth, realness' },
@@ -49,6 +53,8 @@ export const BRAND_KITS = {
     name: 'Hope Heals',
     tagline: '',
     ready: false,
+    headingFont: '',
+    bodyFont: '',
     palette: [],
     pillars: [],
     voice: { aligned: [], banned: [] },
@@ -58,6 +64,8 @@ export const BRAND_KITS = {
     name: 'Ollie & Me',
     tagline: '',
     ready: false,
+    headingFont: '',
+    bodyFont: '',
     palette: [],
     pillars: [],
     voice: { aligned: [], banned: [] },

@@ -4,6 +4,10 @@ import { useBrand } from './useBrand'
 import BrandKit from './BrandKit'
 import Strategy from './Strategy'
 import Hashtags from './Hashtags'
+import Resources from './Resources'
+import Products from './Products'
+import MoodBoard from './MoodBoard'
+import Calendar from './Calendar'
 import EmptyState from './EmptyState'
 
 const TABS = [
@@ -50,10 +54,15 @@ function BrandSwitcher() {
 }
 
 function BrandInner() {
-  const { kit } = useBrand()
+  const { kit, fonts } = useBrand()
+
+  const brandStyle = {
+    '--brand-heading': fonts.heading,
+    '--brand-body': fonts.body,
+  }
 
   return (
-    <section className="brand-module">
+    <section className="brand-module" style={brandStyle}>
       <div className="home-greeting">
         <h1>Brand</h1>
         <p className="list-row-sub">
@@ -89,12 +98,12 @@ function BrandInner() {
       <Routes>
         <Route path="/" element={<BrandKit />} />
         <Route path="strategy" element={<Strategy />} />
-        <Route path="moodboard" element={<ComingSoon title="Mood Board" />} />
-        <Route path="calendar" element={<ComingSoon title="Calendar" />} />
+        <Route path="moodboard" element={<MoodBoard />} />
+        <Route path="calendar" element={<Calendar />} />
         <Route path="hashtags" element={<Hashtags />} />
-        <Route path="products" element={<ComingSoon title="Products & Offers" />} />
+        <Route path="products" element={<Products />} />
         <Route path="insights" element={<ComingSoon title="Insights" />} />
-        <Route path="resources" element={<ComingSoon title="Resources" />} />
+        <Route path="resources" element={<Resources />} />
         <Route path="studio" element={<ComingSoon title="Stability Studio" />} />
         <Route path="*" element={<Navigate to="/brand" replace />} />
       </Routes>

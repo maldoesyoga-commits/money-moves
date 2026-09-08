@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { useEffect, useState } from 'react'
 import { useBrand } from './useBrand'
 import EmptyState from './EmptyState'
 
-const EMPTY_EDITABLE = {
+const EMPTY_FIELDS = {
   tagline: '',
   heading_font: '',
   body_font: '',
@@ -18,56 +17,26 @@ const LOGO_SLOTS = [
   { field: 'submark_url', label: 'Submark / icon' },
 ]
 
-const DEFAULT_HEADING_FONT = 'Georgia, "Times New Roman", serif'
-const DEFAULT_BODY_FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif'
-
 function BrandKit() {
-  const { brand, kit } = useBrand()
+  const { kit, kitRow, saveKitField, fonts } = useBrand()
 
-  const [editable, setEditable] = useState(EMPTY_EDITABLE)
+  const [fields, setFields] = useState(EMPTY_FIELDS)
   const [copied, setCopied] = useState(null)
   const [showVoice, setShowVoice] = useState(false)
 
-  const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('brand_kit')
-      .select('*')
-      .eq('brand', brand)
-      .maybeSingle()
-
-    if (error) {
-      // The brand_kit table may not exist yet — the tab still works from
-      // the built-in kit; saving turns on once supabase/brand.sql is run.
-      console.log('brand_kit not loaded (run supabase/brand.sql to enable saving):', error.message)
-      setEditable(EMPTY_EDITABLE)
-      return
-    }
-
-    setEditable({ ...EMPTY_EDITABLE, ...(data || {}) })
-  }, [brand])
-
   useEffect(() => {
-    load()
-  }, [load])
+    setFields({
+      tagline: kitRow?.tagline || '',
+      heading_font: kitRow?.heading_font || '',
+      body_font: kitRow?.body_font || '',
+      logo_url: kitRow?.logo_url || '',
+      wordmark_url: kitRow?.wordmark_url || '',
+      submark_url: kitRow?.submark_url || '',
+    })
+  }, [kitRow])
 
   function updateLocal(field, value) {
-    setEditable((prev) => ({ ...prev, [field]: value }))
-  }
-
-  async function persist(field, value) {
-    const clean = value.trim() ? value.trim() : null
-    setEditable((prev) => ({ ...prev, [field]: clean || '' }))
-
-    const { error } = await supabase
-      .from('brand_kit')
-      .upsert(
-        { brand, [field]: clean, updated_at: new Date().toISOString() },
-        { onConflict: 'brand' },
-      )
-
-    if (error) {
-      console.log('Could not save brand kit (run supabase/brand.sql?):', error.message)
-    }
+    setFields((prev) => ({ ...prev, [field]: value }))
   }
 
   function copyHex(hex) {
@@ -80,9 +49,9 @@ function BrandKit() {
     }
   }
 
-  const tagline = editable.tagline || kit.tagline
-  const headingFont = editable.heading_font || DEFAULT_HEADING_FONT
-  const bodyFont = editable.body_font || DEFAULT_BODY_FONT
+  const tagline = fields.tagline || kit.tagline
+  const headingFont = fields.heading_font || fonts.heading
+  const bodyFont = fields.body_font || fonts.body
 
   return (
     <div className="brand-kit">
@@ -140,10 +109,10 @@ function BrandKit() {
           <input
             id="heading-font"
             type="text"
-            value={editable.heading_font}
-            placeholder={DEFAULT_HEADING_FONT}
+            value={fields.heading_font}
+            placeholder={kit.headingFont || 'Georgia, serif'}
             onChange={(e) => updateLocal('heading_font', e.target.value)}
-            onBlur={(e) => persist('heading_font', e.target.value)}
+            onBlur={(e) => saveKitField('heading_font', e.target.value)}
           />
           <p className="font-preview" style={{ fontFamily: headingFont }}>
             The quiet part, said plainly.
@@ -156,10 +125,10 @@ function BrandKit() {
           <input
             id="body-font"
             type="text"
-            value={editable.body_font}
-            placeholder={DEFAULT_BODY_FONT}
+            value={fields.body_font}
+            placeholder={kit.bodyFont || 'system-ui, sans-serif'}
             onChange={(e) => updateLocal('body_font', e.target.value)}
-            onBlur={(e) => persist('body_font', e.target.value)}
+            onBlur={(e) => saveKitField('body_font', e.target.value)}
           />
           <p className="font-preview font-preview-body" style={{ fontFamily: bodyFont }}>
             Rest is infrastructure, not a reward. Small steps still count.
@@ -175,7 +144,7 @@ function BrandKit() {
         </div>
         <div className="logo-grid">
           {LOGO_SLOTS.map((slot) => {
-            const url = editable[slot.field]
+            const url = fields[slot.field]
             return (
               <div key={slot.field} className="logo-slot">
                 <div className="logo-preview">
@@ -191,7 +160,7 @@ function BrandKit() {
                   value={url}
                   placeholder="https://…"
                   onChange={(e) => updateLocal(slot.field, e.target.value)}
-                  onBlur={(e) => persist(slot.field, e.target.value)}
+                  onBlur={(e) => saveKitField(slot.field, e.target.value)}
                 />
               </div>
             )
