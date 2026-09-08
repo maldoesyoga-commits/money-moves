@@ -54,21 +54,17 @@ function pad(n) {
   return String(n).padStart(2, '0')
 }
 
-function ContentCard({ item, compact }) {
+function ContentCard({ item, compact, onSelect }) {
   const overdue = item.stage !== 'posted' && item.publish_date && item.publish_date < todayISO()
   return (
-    <div className={`content-card${compact ? ' compact' : ''}`}>
+    <button
+      type="button"
+      className={`content-card${compact ? ' compact' : ''}`}
+      onClick={() => onSelect(item)}
+    >
       <span className={`stage-flag stage-${item.stage}`} />
-      <div className="content-card-main">
-        <span className="content-card-title">
-          {item.link ? (
-            <a href={item.link} target="_blank" rel="noreferrer" className="project-link">
-              {item.title}
-            </a>
-          ) : (
-            item.title
-          )}
-        </span>
+      <span className="content-card-main">
+        <span className="content-card-title">{item.title}</span>
         <span className="content-card-meta">
           {item.publish_date && (
             <span className={overdue ? 'task-overdue' : undefined}>
@@ -78,12 +74,63 @@ function ContentCard({ item, compact }) {
           {item.platform && <span>{PLATFORM_LABEL[item.platform] || item.platform}</span>}
           {item.format && <span className="priority-pill">{FORMAT_LABEL[item.format] || item.format}</span>}
         </span>
+      </span>
+    </button>
+  )
+}
+
+function ContentDetail({ item, onClose }) {
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  if (!item) return null
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div
+        className="modal-card"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-head">
+          <h2>{item.title}</h2>
+          <button type="button" className="row-action-btn" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        <div className="modal-meta">
+          {item.publish_date && <span>{formatDueDate(item.publish_date)}</span>}
+          {item.platform && <span>{PLATFORM_LABEL[item.platform] || item.platform}</span>}
+          {item.format && <span className="priority-pill">{FORMAT_LABEL[item.format] || item.format}</span>}
+          <span className="priority-pill">{STAGE_LABEL[item.stage] || item.stage}</span>
+        </div>
+
+        {item.hook && <p className="modal-hook">“{item.hook}”</p>}
+        {item.notes && <p className="modal-notes">{item.notes}</p>}
+
+        <div className="modal-actions">
+          {item.link && (
+            <a href={item.link} target="_blank" rel="noreferrer" className="row-action-btn">
+              Open link ↗
+            </a>
+          )}
+          <Link to="/content" className="row-action-btn">
+            Edit in Content →
+          </Link>
+        </div>
       </div>
     </div>
   )
 }
 
-function Kanban({ columns }) {
+function Kanban({ columns, onSelect }) {
   return (
     <div className="kanban">
       {columns.map((col) => (
@@ -96,7 +143,9 @@ function Kanban({ columns }) {
             {col.items.length === 0 ? (
               <p className="kanban-empty">—</p>
             ) : (
-              col.items.map((item) => <ContentCard key={item.id} item={item} compact />)
+              col.items.map((item) => (
+                <ContentCard key={item.id} item={item} onSelect={onSelect} compact />
+              ))
             )}
           </div>
         </div>
@@ -105,7 +154,7 @@ function Kanban({ columns }) {
   )
 }
 
-function MonthCalendar({ items }) {
+function MonthCalendar({ items, onSelect }) {
   const today = todayISO()
   const [cursor, setCursor] = useState(() => {
     const d = new Date()
@@ -218,7 +267,7 @@ function MonthCalendar({ items }) {
         ) : (
           <div className="cal-selected-list">
             {selectedItems.map((item) => (
-              <ContentCard key={item.id} item={item} />
+              <ContentCard key={item.id} item={item} onSelect={onSelect} />
             ))}
           </div>
         )}
@@ -227,7 +276,7 @@ function MonthCalendar({ items }) {
   )
 }
 
-function MonthList({ items }) {
+function MonthList({ items, onSelect }) {
   const { months, unscheduled } = useMemo(() => {
     const scheduled = items.filter((item) => item.publish_date)
     const undated = items.filter((item) => !item.publish_date)
@@ -261,7 +310,7 @@ function MonthList({ items }) {
           </div>
           <div className="cal-selected-list">
             {month.items.map((item) => (
-              <ContentCard key={item.id} item={item} />
+              <ContentCard key={item.id} item={item} onSelect={onSelect} />
             ))}
           </div>
         </div>
@@ -275,7 +324,7 @@ function MonthList({ items }) {
           </div>
           <div className="cal-selected-list">
             {unscheduled.map((item) => (
-              <ContentCard key={item.id} item={item} />
+              <ContentCard key={item.id} item={item} onSelect={onSelect} />
             ))}
           </div>
         </div>
@@ -289,6 +338,7 @@ function Calendar() {
 
   const [items, setItems] = useState([])
   const [loaded, setLoaded] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
   const [view, setView] = useState(() => {
     try {
       const saved = localStorage.getItem(VIEW_STORAGE_KEY)
@@ -358,7 +408,8 @@ function Calendar() {
       <div className="card brand-help-card">
         <span className="brand-kit-eyebrow">Content calendar</span>
         <p className="brand-help-text">
-          A brand-filtered view of your content pipeline. Add and edit items in the{' '}
+          A brand-filtered view of your content pipeline. Tap any card to see the details.
+          Add and edit items in the{' '}
           <Link to="/content" className="project-link">
             Content module
           </Link>
@@ -388,18 +439,20 @@ function Calendar() {
         </div>
       ) : (
         <>
-          {view === 'calendar' && <MonthCalendar items={items} />}
-          {view === 'list' && <MonthList items={items} />}
+          {view === 'calendar' && <MonthCalendar items={items} onSelect={setSelectedItem} />}
+          {view === 'list' && <MonthList items={items} onSelect={setSelectedItem} />}
           {view === 'type' && (
             typeColumns.length === 0 ? (
               <p className="empty-text">Nothing to board yet.</p>
             ) : (
-              <Kanban columns={typeColumns} />
+              <Kanban columns={typeColumns} onSelect={setSelectedItem} />
             )
           )}
-          {view === 'status' && <Kanban columns={statusColumns} />}
+          {view === 'status' && <Kanban columns={statusColumns} onSelect={setSelectedItem} />}
         </>
       )}
+
+      <ContentDetail item={selectedItem} onClose={() => setSelectedItem(null)} />
     </div>
   )
 }

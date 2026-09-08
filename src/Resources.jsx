@@ -13,6 +13,23 @@ const CATEGORIES = [
 
 const CAT_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.value, c.label]))
 
+const VIEWS = [
+  { key: 'type', label: 'By type' },
+  { key: 'date', label: 'By date' },
+  { key: 'name', label: 'A–Z' },
+]
+
+const VIEW_STORAGE_KEY = 'homestead.resourcesView'
+
+function formatDate(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 function Resources() {
   const { brand } = useBrand()
 
@@ -22,6 +39,26 @@ function Resources() {
   const [label, setLabel] = useState('')
   const [url, setUrl] = useState('')
   const [category, setCategory] = useState('doc')
+
+  const [view, setView] = useState(() => {
+    try {
+      const saved = localStorage.getItem(VIEW_STORAGE_KEY)
+      if (saved && VIEWS.some((v) => v.key === saved)) return saved
+    } catch {
+      // ignore
+    }
+    return 'type'
+  })
+  const [catFilter, setCatFilter] = useState('all')
+
+  function chooseView(next) {
+    setView(next)
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, next)
+    } catch {
+      // ignore
+    }
+  }
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -91,14 +128,29 @@ function Resources() {
     }
   }
 
-  const groups = useMemo(() => {
+  const filtered = useMemo(
+    () => links.filter((link) => catFilter === 'all' || (link.category || 'other') === catFilter),
+    [links, catFilter],
+  )
+
+  const typeGroups = useMemo(() => {
     return CATEGORIES.map((c) => ({
       ...c,
-      items: links.filter((link) => (link.category || 'other') === c.value),
+      items: filtered.filter((link) => (link.category || 'other') === c.value),
     })).filter((group) => group.items.length > 0)
-  }, [links])
+  }, [filtered])
 
-  function renderLink(link) {
+  const byDate = useMemo(
+    () => filtered.slice().sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')),
+    [filtered],
+  )
+
+  const byName = useMemo(
+    () => filtered.slice().sort((a, b) => (a.label || '').localeCompare(b.label || '')),
+    [filtered],
+  )
+
+  function renderLink(link, showDate) {
     const editing = editingId === link.id
 
     return (
@@ -108,7 +160,11 @@ function Resources() {
             <a href={link.url} target="_blank" rel="noreferrer" className="list-row-title project-link">
               {link.label} ↗
             </a>
-            <span className="list-row-sub link-url">{link.url}</span>
+            <span className="list-row-sub task-meta">
+              <span className="priority-pill">{CAT_LABEL[link.category] || 'Other'}</span>
+              {showDate && link.created_at && <span>{formatDate(link.created_at)}</span>}
+              <span className="link-url">{link.url}</span>
+            </span>
           </div>
           <button
             type="button"
@@ -197,15 +253,65 @@ function Resources() {
           </EmptyState>
         </div>
       ) : (
-        groups.map((group) => (
-          <div className="card" key={group.value}>
-            <div className="project-scope-header">
-              <h2>{CAT_LABEL[group.value]}</h2>
-              <span className="list-row-sub">{group.items.length}</span>
-            </div>
-            <ul className="list">{group.items.map(renderLink)}</ul>
+        <>
+          <div className="card resources-controls">
+            <nav className="view-tabs resources-view-tabs">
+              {VIEWS.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  className={`view-tab${view === v.key ? ' active' : ''}`}
+                  onClick={() => chooseView(v.key)}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </nav>
+            <label className="filter-toggle">
+              Type
+              <select
+                className="inline-select"
+                value={catFilter}
+                onChange={(e) => setCatFilter(e.target.value)}
+              >
+                <option value="all">All</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-        ))
+
+          {filtered.length === 0 ? (
+            <div className="card">
+              <p className="empty-text">Nothing matches that filter.</p>
+            </div>
+          ) : view === 'type' ? (
+            typeGroups.map((group) => (
+              <div className="card" key={group.value}>
+                <div className="project-scope-header">
+                  <h2>{CAT_LABEL[group.value]}</h2>
+                  <span className="list-row-sub">{group.items.length}</span>
+                </div>
+                <ul className="list">{group.items.map((link) => renderLink(link, false))}</ul>
+              </div>
+            ))
+          ) : (
+            <div className="card">
+              <div className="project-scope-header">
+                <h2>{view === 'date' ? 'Newest first' : 'A–Z'}</h2>
+                <span className="list-row-sub">{filtered.length}</span>
+              </div>
+              <ul className="list">
+                {(view === 'date' ? byDate : byName).map((link) =>
+                  renderLink(link, view === 'date'),
+                )}
+              </ul>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

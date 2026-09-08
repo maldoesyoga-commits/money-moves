@@ -55,12 +55,15 @@ function BrandSwitcher() {
 }
 
 function BrandInner() {
-  const { kit, fonts } = useBrand()
+  const { brand, kit, fonts } = useBrand()
 
   const brandStyle = {
     '--brand-heading': fonts.heading,
     '--brand-body': fonts.body,
   }
+
+  // Stability Studio runs for Creating Mal only.
+  const tabs = TABS.filter((tab) => tab.to !== '/brand/studio' || brand === 'cm')
 
   return (
     <section className="brand-module" style={brandStyle}>
@@ -74,7 +77,7 @@ function BrandInner() {
       <BrandSwitcher />
 
       <nav className="brand-tabs">
-        {TABS.map(({ to, label, end }) => (
+        {tabs.map(({ to, label, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -105,7 +108,10 @@ function BrandInner() {
         <Route path="products" element={<Products />} />
         <Route path="insights" element={<ComingSoon title="Insights" />} />
         <Route path="resources" element={<Resources />} />
-        <Route path="studio" element={<StabilityStudio />} />
+        <Route
+          path="studio"
+          element={brand === 'cm' ? <StabilityStudio /> : <Navigate to="/brand" replace />}
+        />
         <Route path="*" element={<Navigate to="/brand" replace />} />
       </Routes>
     </section>
