@@ -8,6 +8,7 @@ import Resources from './Resources'
 import Products from './Products'
 import MoodBoard from './MoodBoard'
 import Calendar from './Calendar'
+import StabilityStudio from './StabilityStudio'
 import EmptyState from './EmptyState'
 
 const TABS = [
@@ -104,7 +105,7 @@ function BrandInner() {
         <Route path="products" element={<Products />} />
         <Route path="insights" element={<ComingSoon title="Insights" />} />
         <Route path="resources" element={<Resources />} />
-        <Route path="studio" element={<ComingSoon title="Stability Studio" />} />
+        <Route path="studio" element={<StabilityStudio />} />
         <Route path="*" element={<Navigate to="/brand" replace />} />
       </Routes>
     </section>

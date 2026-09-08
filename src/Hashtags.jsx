@@ -13,6 +13,8 @@ const KINDS = [
 
 const KIND_LABEL = Object.fromEntries(KINDS.map((k) => [k.value, k.label]))
 
+const GROUP_SIZE = 5
+
 function parseTags(raw) {
   if (!raw) return []
   return raw
@@ -22,12 +24,18 @@ function parseTags(raw) {
     .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`))
 }
 
+function chunk(arr, size) {
+  const out = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
+}
+
 function Hashtags() {
   const { brand, kit } = useBrand()
 
   const [banks, setBanks] = useState([])
   const [expandedId, setExpandedId] = useState(null)
-  const [copiedId, setCopiedId] = useState(null)
+  const [copiedKey, setCopiedKey] = useState(null)
 
   const [name, setName] = useState('')
   const [kind, setKind] = useState('mixed')
@@ -94,13 +102,12 @@ function Hashtags() {
     }
   }
 
-  function copyBank(bank) {
-    const tags = parseTags(bank.tags)
-    if (tags.length === 0) return
+  function copyText(text, key) {
+    if (!text) return
     try {
-      navigator.clipboard.writeText(tags.join(' '))
-      setCopiedId(bank.id)
-      setTimeout(() => setCopiedId((current) => (current === bank.id ? null : current)), 1400)
+      navigator.clipboard.writeText(text)
+      setCopiedKey(key)
+      setTimeout(() => setCopiedKey((current) => (current === key ? null : current)), 1400)
     } catch {
       // clipboard unavailable — no-op
     }
@@ -140,13 +147,14 @@ function Hashtags() {
       {banks.length === 0 ? (
         <div className="card">
           <EmptyState icon="#️⃣" title="No hashtag banks yet">
-            Build a bank per pillar or reach level. Paste your tags in, and tap Copy to grab
-            the whole set when you post.
+            Build a bank per pillar or reach level. Paste your tags in, and they’ll line up in
+            sets of five — tap Copy on any set to grab five, ready to paste into a post.
           </EmptyState>
         </div>
       ) : (
         banks.map((bank) => {
           const tags = parseTags(bank.tags)
+          const sets = chunk(tags, GROUP_SIZE)
           const open = expandedId === bank.id
           const inRange = tags.length >= 10 && tags.length <= 15
 
@@ -156,15 +164,16 @@ function Hashtags() {
                 <h2>{bank.name}</h2>
                 <div className="bank-header-actions">
                   <span className={`tag-count${inRange ? ' good' : ''}`}>
-                    {tags.length} tag{tags.length === 1 ? '' : 's'}
+                    {tags.length} tag{tags.length === 1 ? '' : 's'} · {sets.length} set
+                    {sets.length === 1 ? '' : 's'}
                   </span>
                   <button
                     type="button"
                     className="row-action-btn"
-                    onClick={() => copyBank(bank)}
+                    onClick={() => copyText(tags.join(' '), `${bank.id}-all`)}
                     disabled={tags.length === 0}
                   >
-                    {copiedId === bank.id ? 'Copied ✓' : 'Copy'}
+                    {copiedKey === `${bank.id}-all` ? 'Copied ✓' : 'Copy all'}
                   </button>
                   <button
                     type="button"
@@ -178,13 +187,35 @@ function Hashtags() {
 
               <span className="priority-pill">{KIND_LABEL[bank.kind] || 'Set'}</span>
 
-              {tags.length > 0 && (
-                <div className="hashtag-chips">
-                  {tags.map((tag, index) => (
-                    <span key={`${tag}-${index}`} className="hashtag-chip">
-                      {tag}
-                    </span>
-                  ))}
+              {sets.length > 0 && (
+                <div className="hashtag-sets">
+                  {sets.map((group, index) => {
+                    const key = `${bank.id}-${index}`
+                    return (
+                      <div className="hashtag-set" key={key}>
+                        <div className="hashtag-set-head">
+                          <span className="hashtag-set-label">
+                            Set {index + 1}
+                            {group.length < GROUP_SIZE ? ` · ${group.length}` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            className="row-action-btn"
+                            onClick={() => copyText(group.join(' '), key)}
+                          >
+                            {copiedKey === key ? 'Copied ✓' : 'Copy 5'}
+                          </button>
+                        </div>
+                        <div className="hashtag-chips">
+                          {group.map((tag, tagIndex) => (
+                            <span key={`${tag}-${tagIndex}`} className="hashtag-chip">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
 
@@ -227,6 +258,10 @@ function Hashtags() {
                     onChange={(e) => updateLocal(bank.id, { tags: e.target.value })}
                     onBlur={(e) => persist(bank.id, { tags: e.target.value || null })}
                   />
+                  <p className="brand-hint">
+                    Tags group into sets of five in order — reorder them here to change which five
+                    land together.
+                  </p>
                   <input
                     type="text"
                     value={bank.strategy || ''}

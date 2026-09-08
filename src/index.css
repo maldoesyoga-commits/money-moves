@@ -4431,3 +4431,254 @@ button.segmented-tab.active:hover {
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
+
+/* ============================================================
+   Hashtag sets (groups of five)
+   ============================================================ */
+
+.hashtag-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.hashtag-set {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--bg);
+}
+
+.hashtag-set-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.hashtag-set-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.hashtag-set .hashtag-chips {
+  margin-top: 0;
+}
+
+/* ============================================================
+   Stability Studio
+   ============================================================ */
+
+.ss-hero {
+  text-align: center;
+}
+
+.ss-tagline {
+  font-family: var(--brand-heading, var(--font-serif));
+  font-size: 26px;
+  color: var(--text);
+  margin: 4px 0 10px;
+}
+
+.ss-what {
+  color: var(--text-soft);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.ss-north {
+  color: var(--sage);
+  font-size: 15px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+.ss-doc-link {
+  display: inline-block;
+  margin-top: 14px;
+}
+
+.ss-truths {
+  list-style: decimal;
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ss-truth-title {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ss-truth-note {
+  display: block;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.ss-limbs-hint {
+  margin-bottom: 14px;
+}
+
+.ss-limbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.ss-limb {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.ss-limb-icon {
+  font-size: 20px;
+}
+
+.ss-limb-label {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.ss-limb-state {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.ss-limb-unset {
+  border-left-color: var(--border);
+}
+
+.ss-limb-strong {
+  border-left-color: var(--sage);
+}
+
+.ss-limb-strong .ss-limb-state {
+  color: var(--sage);
+}
+
+.ss-limb-rebuilding {
+  border-left-color: var(--clay);
+}
+
+.ss-limb-rebuilding .ss-limb-state {
+  color: var(--clay);
+}
+
+.ss-limb-injured {
+  border-left-color: var(--terracotta-muted);
+}
+
+.ss-limb-injured .ss-limb-state {
+  color: var(--terracotta-muted-text);
+}
+
+.ss-phases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.ss-phase {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--bg);
+}
+
+.ss-phase-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ss-phase-name {
+  font-family: var(--brand-heading, var(--font-serif));
+  font-size: 18px;
+  color: var(--text);
+}
+
+.ss-phase-theme {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-soft);
+}
+
+.ss-phase-focus {
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+
+.ss-phase-tools {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.ss-phase-outcome {
+  font-style: italic;
+  color: var(--sage);
+  font-size: 14px;
+}
+
+.ss-season-promise {
+  color: var(--text-soft);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.ss-pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.ss-pillar {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--bg);
+}
+
+.ss-pillar-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.ss-pillar ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+.ss-tone {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--sage);
+  line-height: 1.6;
+}
