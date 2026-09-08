@@ -1,26 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
+import { effectDeltas, mergeDeltaLists, applyBalanceDeltas } from './lib/balances'
 
 function Savings() {
   const [funds, setFunds] = useState([])
   const [entriesByFund, setEntriesByFund] = useState({})
-  const [name, setName] = useState('')
-  const [kind, setKind] = useState('sinking')
-  const [targetAmount, setTargetAmount] = useState('')
+  const [accounts, setAccounts] = useState([])
+  const [expandedId, setExpandedId] = useState(null)
   const [amounts, setAmounts] = useState({})
+  const [notice, setNotice] = useState(null)
 
-  async function loadFunds() {
+  const [name, setName] = useState('')
+  const [targetAmount, setTargetAmount] = useState('')
+
+  const loadFunds = useCallback(async () => {
     const { data, error } = await supabase.from('savings_funds').select('*')
-
     if (error) {
-      console.error('Failed to load savings funds', error.message)
+      console.log('Failed to load savings funds', error.message)
       return
     }
-
     setFunds(data)
     data.forEach((fund) => loadEntries(fund.id))
-  }
+  }, [])
 
   async function loadEntries(fundId) {
     const { data, error } = await supabase
@@ -28,78 +30,135 @@ function Savings() {
       .select('*')
       .eq('fund_id', fundId)
       .order('entry_date')
-
     if (error) {
-      console.error('Failed to load fund entries', error.message)
+      console.log('Failed to load fund entries', error.message)
       return
     }
-
     setEntriesByFund((prev) => ({ ...prev, [fundId]: data }))
   }
 
-  useEffect(() => {
-    loadFunds()
+  const loadAccounts = useCallback(async () => {
+    const { data, error } = await supabase.from('accounts').select('*').order('sort_order')
+    if (!error && data) setAccounts(data)
   }, [])
 
-  async function handleCreateFund(e) {
-    e.preventDefault()
+  useEffect(() => {
+    loadFunds()
+    loadAccounts()
+  }, [loadFunds, loadAccounts])
 
-    const payload = { name, kind }
+  const emergencyFund = funds.find((f) => f.kind === 'emergency')
+  const sinkingFunds = funds.filter((f) => f.kind === 'sinking')
+
+  async function handleCreateSinking(e) {
+    e.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed) return
+
+    const payload = { name: trimmed, kind: 'sinking' }
     if (targetAmount) payload.target = Number(targetAmount)
 
     const { error } = await supabase.from('savings_funds').insert(payload)
-
     if (error) {
-      console.error('Failed to create savings fund', error.message)
+      console.log('Failed to create fund', error.message)
       return
     }
-
     setName('')
-    setKind('sinking')
     setTargetAmount('')
+    loadFunds()
+  }
+
+  async function handleCreateEmergency() {
+    const { error } = await supabase
+      .from('savings_funds')
+      .insert({ name: 'Emergency Fund', kind: 'emergency' })
+    if (error) {
+      console.log('Failed to create emergency fund', error.message)
+      return
+    }
     loadFunds()
   }
 
   function amountFor(fundId, field) {
     return amounts[fundId]?.[field] ?? ''
   }
-
   function setAmountFor(fundId, field, value) {
     setAmounts((prev) => ({ ...prev, [fundId]: { ...prev[fundId], [field]: value } }))
-  }
-
-  async function handleEntry(e, fundId, direction) {
-    e.preventDefault()
-
-    const field = direction === 'in' ? 'add' : 'take'
-    const amount = Number(amountFor(fundId, field))
-
-    const { error } = await supabase.from('fund_entries').insert({
-      fund_id: fundId,
-      amount,
-      direction,
-    })
-
-    if (error) {
-      console.error('Failed to add fund entry', error.message)
-      return
-    }
-
-    setAmountFor(fundId, field, '')
-    loadEntries(fundId)
   }
 
   function balanceFor(fundId) {
     const entries = entriesByFund[fundId] || []
     return entries.reduce(
-      (sum, entry) => sum + (entry.direction === 'in' ? Number(entry.amount) : -Number(entry.amount)),
+      (sum, e) => sum + (e.direction === 'in' ? Number(e.amount) : -Number(e.amount)),
       0,
     )
+  }
+
+  // Move real money: a transfer between a chosen account and the savings
+  // bucket account (by kind), plus a fund_entry so the fund tracks its own total.
+  async function moveMoney(fund, direction) {
+    setNotice(null)
+    const field = direction === 'in' ? 'add' : 'take'
+    const acctField = direction === 'in' ? 'fromAcct' : 'toAcct'
+    const amount = Number(amountFor(fund.id, field))
+    const chosenAccountId = amountFor(fund.id, acctField)
+
+    if (!amount || amount <= 0) return
+
+    const savingsAccount = accounts.find((a) => a.kind === fund.kind)
+
+    let transactionId = null
+
+    if (savingsAccount && chosenAccountId) {
+      const fromId = direction === 'in' ? chosenAccountId : savingsAccount.id
+      const toId = direction === 'in' ? savingsAccount.id : chosenAccountId
+
+      const { data: txn, error: txnError } = await supabase
+        .from('transactions')
+        .insert({
+          amount,
+          direction: 'transfer',
+          from_account_id: fromId,
+          to_account_id: toId,
+          note: `${direction === 'in' ? '→' : '←'} ${fund.name}`,
+        })
+        .select()
+        .single()
+
+      if (txnError) {
+        console.log('Failed to create transfer', txnError.message)
+        return
+      }
+      transactionId = txn.id
+      await applyBalanceDeltas(mergeDeltaLists(effectDeltas(txn, 1)))
+    } else {
+      setNotice(
+        'Recorded in the fund. To move real money too, pick an account and make sure you have a ' +
+          `${fund.kind} account set up in Accounts.`,
+      )
+    }
+
+    const entry = { fund_id: fund.id, amount, direction }
+    if (transactionId) entry.transaction_id = transactionId
+
+    const { error: entryError } = await supabase.from('fund_entries').insert(entry)
+    if (entryError) {
+      console.log('Failed to record fund entry', entryError.message)
+      return
+    }
+
+    setAmountFor(fund.id, field, '')
+    loadEntries(fund.id)
+    loadAccounts()
   }
 
   function renderFund(fund) {
     const entries = entriesByFund[fund.id] || []
     const balance = balanceFor(fund.id)
+    const open = expandedId === fund.id
+    const pct = fund.target
+      ? Math.min(100, Math.max(0, Math.round((balance / Number(fund.target)) * 100)))
+      : null
 
     let running = 0
     const rows = entries.map((entry) => {
@@ -107,16 +166,15 @@ function Savings() {
       return { ...entry, running }
     })
 
-    const pct = fund.target
-      ? Math.min(100, Math.max(0, Math.round((balance / Number(fund.target)) * 100)))
-      : null
-
     return (
-      <div className="subcard" key={fund.id}>
-        <div className="fund-header">
-          <h4>{fund.name}</h4>
-          <span className="money">{formatMoney(balance)}</span>
-        </div>
+      <div className="subcard fund-card" key={fund.id}>
+        <button type="button" className="fund-card-head" onClick={() => setExpandedId(open ? null : fund.id)}>
+          <span className="fund-card-name">{fund.name}</span>
+          <span className="fund-card-right">
+            <span className="money">{formatMoney(balance)}</span>
+            <span className="row-action-btn">{open ? 'Close' : 'Open'}</span>
+          </span>
+        </button>
 
         {fund.target && (
           <div className="progress-wrap">
@@ -129,82 +187,103 @@ function Savings() {
           </div>
         )}
 
-        <div className="field-row">
-          <form className="mini-form" onSubmit={(e) => handleEntry(e, fund.id, 'in')}>
-            <input
-              type="number"
-              value={amountFor(fund.id, 'add')}
-              onChange={(e) => setAmountFor(fund.id, 'add', e.target.value)}
-              placeholder="amount"
-              required
-            />
-            <button type="submit" className="btn-secondary">
-              Add money
-            </button>
-          </form>
-          <form className="mini-form" onSubmit={(e) => handleEntry(e, fund.id, 'out')}>
-            <input
-              type="number"
-              value={amountFor(fund.id, 'take')}
-              onChange={(e) => setAmountFor(fund.id, 'take', e.target.value)}
-              placeholder="amount"
-              required
-            />
-            <button type="submit" className="btn-secondary">
-              Take money
-            </button>
-          </form>
-        </div>
+        {open && (
+          <div className="fund-detail">
+            <div className="fund-move">
+              <span className="fund-move-label">Add money</span>
+              <form className="fund-move-row" onSubmit={(e) => { e.preventDefault(); moveMoney(fund, 'in') }}>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={amountFor(fund.id, 'add')}
+                  onChange={(e) => setAmountFor(fund.id, 'add', e.target.value)}
+                  placeholder="amount"
+                  required
+                />
+                <select
+                  value={amountFor(fund.id, 'fromAcct')}
+                  onChange={(e) => setAmountFor(fund.id, 'fromAcct', e.target.value)}
+                >
+                  <option value="">From account —</option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+                <button type="submit" className="btn-secondary">
+                  Add
+                </button>
+              </form>
+            </div>
+            <div className="fund-move">
+              <span className="fund-move-label">Take money</span>
+              <form className="fund-move-row" onSubmit={(e) => { e.preventDefault(); moveMoney(fund, 'out') }}>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={amountFor(fund.id, 'take')}
+                  onChange={(e) => setAmountFor(fund.id, 'take', e.target.value)}
+                  placeholder="amount"
+                  required
+                />
+                <select
+                  value={amountFor(fund.id, 'toAcct')}
+                  onChange={(e) => setAmountFor(fund.id, 'toAcct', e.target.value)}
+                >
+                  <option value="">To account —</option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+                <button type="submit" className="btn-secondary">
+                  Take
+                </button>
+              </form>
+            </div>
 
-        {rows.length > 0 ? (
-          <ul className="ledger-list">
-            {rows.map((entry) => (
-              <li key={entry.id} className="ledger-row">
-                <span className="list-row-sub">{entry.entry_date}</span>
-                <span className={entry.direction === 'in' ? 'amount-in' : 'amount-out'}>
-                  {entry.direction === 'in' ? '+' : '-'}
-                  {formatMoney(entry.amount)}
-                </span>
-                <span className="money">{formatMoney(entry.running)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="empty-text">No entries yet.</p>
+            {rows.length > 0 ? (
+              <ul className="ledger-list">
+                {rows.map((entry) => (
+                  <li key={entry.id} className="ledger-row">
+                    <span className="list-row-sub">{entry.entry_date}</span>
+                    <span className={entry.direction === 'in' ? 'amount-in' : 'amount-out'}>
+                      {entry.direction === 'in' ? '+' : '-'}
+                      {formatMoney(entry.amount)}
+                    </span>
+                    <span className="money">{formatMoney(entry.running)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty-text">No entries yet.</p>
+            )}
+          </div>
         )}
       </div>
     )
   }
 
-  const sinkingFunds = funds.filter((fund) => fund.kind === 'sinking')
-  const emergencyFunds = funds.filter((fund) => fund.kind === 'emergency')
-
   return (
     <div className="card">
       <h2>Savings</h2>
+      {notice && <p className="list-row-sub savings-notice">{notice}</p>}
 
-      <form onSubmit={handleCreateFund}>
-        <div className="field-row">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="fund name"
-            required
-          />
-          <select value={kind} onChange={(e) => setKind(e.target.value)}>
-            <option value="sinking">Sinking</option>
-            <option value="emergency">Emergency</option>
-          </select>
-          <input
-            type="number"
-            value={targetAmount}
-            onChange={(e) => setTargetAmount(e.target.value)}
-            placeholder="target amount (optional)"
-          />
-        </div>
-        <button type="submit">Create fund</button>
-      </form>
+      <h3>Emergency Fund</h3>
+      <div className="fund-group">
+        {emergencyFund ? (
+          renderFund(emergencyFund)
+        ) : (
+          <div className="subcard">
+            <p className="empty-text">No emergency fund yet.</p>
+            <button type="button" className="btn-secondary" onClick={handleCreateEmergency}>
+              Set up my Emergency Fund
+            </button>
+          </div>
+        )}
+      </div>
 
       <h3>Sinking Funds</h3>
       <div className="fund-group">
@@ -215,14 +294,25 @@ function Savings() {
         )}
       </div>
 
-      <h3>Emergency Funds</h3>
-      <div className="fund-group">
-        {emergencyFunds.length > 0 ? (
-          emergencyFunds.map(renderFund)
-        ) : (
-          <p className="empty-text">No emergency funds yet.</p>
-        )}
-      </div>
+      <form onSubmit={handleCreateSinking} className="savings-add">
+        <div className="field-row">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="new sinking fund name"
+            required
+          />
+          <input
+            type="number"
+            step="0.01"
+            value={targetAmount}
+            onChange={(e) => setTargetAmount(e.target.value)}
+            placeholder="target (optional)"
+          />
+        </div>
+        <button type="submit">Create sinking fund</button>
+      </form>
     </div>
   )
 }

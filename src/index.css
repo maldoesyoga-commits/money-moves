@@ -5106,3 +5106,232 @@ button.segmented-tab.active:hover {
 .ss-hist-chip {
   font-size: 14px;
 }
+
+/* ============================================================
+   Money Moves upgrades — accounts, subscriptions, receipts, savings
+   ============================================================ */
+
+.account-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.account-subs {
+  margin: 0;
+}
+
+.account-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.account-edit .field-row input,
+.account-edit .field-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.balance-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-soft);
+  flex: 1;
+}
+
+.account-subs-list {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.billing-day-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.billing-day-field input {
+  width: 100px;
+}
+
+.upcoming-subs {
+  margin-top: 14px;
+}
+
+/* Receipts */
+.document-row-wrap {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.document-row-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.document-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.document-detail-img {
+  max-width: 100%;
+  border-radius: 10px;
+}
+
+.stacked-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.stacked-field select {
+  width: 100%;
+}
+
+/* Savings */
+.fund-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fund-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.fund-card-name {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.fund-card-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fund-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.savings-notice {
+  color: var(--terracotta-muted-text);
+}
+
+.savings-add {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+/* ============================================================
+   Money form structure — aligned add/edit forms
+   ============================================================ */
+
+.money-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.money-form .field-row {
+  gap: 10px;
+}
+
+.money-form .field-row > input,
+.money-form .field-row > select {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.money-form > button[type='submit'] {
+  align-self: flex-start;
+}
+
+/* Savings add / take money */
+.fund-move {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fund-move-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.fund-move-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.fund-move-row input,
+.fund-move-row select {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.fund-move-row button {
+  flex: 0 0 auto;
+}
+
+/* Debts add forms, kept tidy and consistent */
+.mini-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.mini-form input,
+.mini-form select {
+  flex: 1 1 100px;
+  min-width: 0;
+}
+
+.mini-form button {
+  flex: 0 0 auto;
+}

@@ -1,64 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
+import { effectDeltas, mergeDeltaLists, applyBalanceDeltas } from './lib/balances'
 import { usePeriod } from './usePeriod'
 import PeriodSelector from './PeriodSelector'
-
-function effectDeltas(txn, sign) {
-  const amount = (Number(txn.amount) || 0) * sign
-  const deltas = []
-
-  if (txn.direction === 'out') {
-    if (txn.from_account_id) deltas.push({ accountId: txn.from_account_id, delta: -amount })
-  } else if (txn.direction === 'in') {
-    if (txn.to_account_id) deltas.push({ accountId: txn.to_account_id, delta: amount })
-  } else if (txn.direction === 'transfer') {
-    if (txn.from_account_id) deltas.push({ accountId: txn.from_account_id, delta: -amount })
-    if (txn.to_account_id) deltas.push({ accountId: txn.to_account_id, delta: amount })
-  }
-
-  return deltas
-}
-
-function mergeDeltaLists(...lists) {
-  const map = new Map()
-  for (const list of lists) {
-    for (const { accountId, delta } of list) {
-      if (!accountId) continue
-      map.set(accountId, (map.get(accountId) || 0) + delta)
-    }
-  }
-  return map
-}
-
-async function applyBalanceDeltas(deltaMap) {
-  for (const [accountId, delta] of deltaMap.entries()) {
-    if (!delta) continue
-
-    const { data: account, error: fetchError } = await supabase
-      .from('accounts')
-      .select('balance')
-      .eq('id', accountId)
-      .single()
-
-    if (fetchError) {
-      console.log(fetchError.message)
-      return false
-    }
-
-    const { error: updateError } = await supabase
-      .from('accounts')
-      .update({ balance: Number(account.balance || 0) + delta })
-      .eq('id', accountId)
-
-    if (updateError) {
-      console.log(updateError.message)
-      return false
-    }
-  }
-
-  return true
-}
 
 function directionLabel(direction) {
   if (direction === 'in') return 'In'
@@ -74,6 +19,20 @@ function extensionFromFile(file) {
   return 'jpg'
 }
 
+// Insert (or clear) the auto "draw" debt entry that mirrors a from-a-debt
+// transaction, so borrowing shows up on the debt. Linked by transaction_id.
+async function syncDebtDraw(txnId, fromDebtId, amount) {
+  await supabase.from('debt_entries').delete().eq('transaction_id', txnId)
+  if (fromDebtId) {
+    await supabase.from('debt_entries').insert({
+      debt_id: fromDebtId,
+      amount: Number(amount) || 0,
+      direction: 'draw',
+      transaction_id: txnId,
+    })
+  }
+}
+
 function Transactions() {
   const { period } = usePeriod()
 
@@ -87,6 +46,7 @@ function Transactions() {
   const [debtId, setDebtId] = useState('')
   const [direction, setDirection] = useState('out')
   const [fromAccountId, setFromAccountId] = useState('')
+  const [fromDebtId, setFromDebtId] = useState('')
   const [toAccountId, setToAccountId] = useState('')
   const [addError, setAddError] = useState(null)
 
@@ -103,6 +63,7 @@ function Transactions() {
   const [editDebtId, setEditDebtId] = useState('')
   const [editDirection, setEditDirection] = useState('out')
   const [editFromAccountId, setEditFromAccountId] = useState('')
+  const [editFromDebtId, setEditFromDebtId] = useState('')
   const [editToAccountId, setEditToAccountId] = useState('')
   const [editError, setEditError] = useState(null)
   const [quickDebtId, setQuickDebtId] = useState('')
@@ -112,12 +73,10 @@ function Transactions() {
       .from('transactions')
       .select('*')
       .order('txn_date', { ascending: false })
-
     if (error) {
-      console.error('Failed to load transactions', error)
+      console.log('Failed to load transactions', error.message)
       return
     }
-
     setTransactions(data)
   }
 
@@ -126,36 +85,22 @@ function Transactions() {
       .from('categories')
       .select('*')
       .or('archived.is.null,archived.eq.false')
-
     if (error) {
-      console.error('Failed to load categories', error)
+      console.log('Failed to load categories', error.message)
       return
     }
-
     setCategories(data)
     if (data && data.length > 0) setCategoryId(data[0].id)
   }
 
   async function loadDebts() {
     const { data, error } = await supabase.from('debts').select('*')
-
-    if (error) {
-      console.error('Failed to load debts', error)
-      return
-    }
-
-    setDebts(data)
+    if (!error && data) setDebts(data)
   }
 
   async function loadAccounts() {
     const { data, error } = await supabase.from('accounts').select('*').order('sort_order')
-
-    if (error) {
-      console.error('Failed to load accounts', error)
-      return
-    }
-
-    setAccounts(data)
+    if (!error && data) setAccounts(data)
   }
 
   useEffect(() => {
@@ -174,6 +119,49 @@ function Transactions() {
     }
   }, [])
 
+  // "From" combines accounts and (for spends) debts, encoded as acct:<id> / debt:<id>.
+  function fromValue(acctId, debtIdValue) {
+    if (debtIdValue) return `debt:${debtIdValue}`
+    if (acctId) return `acct:${acctId}`
+    return ''
+  }
+  function applyFromValue(value, setAcct, setDebt) {
+    if (value.startsWith('debt:')) {
+      setDebt(value.slice(5))
+      setAcct('')
+    } else if (value.startsWith('acct:')) {
+      setAcct(value.slice(5))
+      setDebt('')
+    } else {
+      setAcct('')
+      setDebt('')
+    }
+  }
+
+  function FromSelect({ value, onChange, forDirection, requiredTransfer }) {
+    return (
+      <select value={value} onChange={onChange} required={requiredTransfer}>
+        <option value="">From —</option>
+        <optgroup label="Accounts">
+          {accounts.map((account) => (
+            <option key={account.id} value={`acct:${account.id}`}>
+              {account.name}
+            </option>
+          ))}
+        </optgroup>
+        {forDirection === 'out' && debts.length > 0 && (
+          <optgroup label="Borrow from (debt)">
+            {debts.map((debt) => (
+              <option key={debt.id} value={`debt:${debt.id}`}>
+                {debt.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
+      </select>
+    )
+  }
+
   async function handleAdd(e) {
     e.preventDefault()
     setAddError(null)
@@ -191,54 +179,44 @@ function Transactions() {
       to_account_id: toAccountId || null,
     }
     if (debtId) payload.debt_id = debtId
+    if (fromDebtId && direction === 'out') payload.from_debt_id = fromDebtId
 
     const { data: inserted, error } = await supabase
       .from('transactions')
       .insert(payload)
       .select()
       .single()
-
     if (error) {
       console.log(error.message)
       return
     }
 
-    const deltaMap = mergeDeltaLists(effectDeltas(inserted, 1))
-    const balancesOk = await applyBalanceDeltas(deltaMap)
-    if (!balancesOk) {
-      console.log('Transaction saved but its account balance could not be updated')
-    }
+    await applyBalanceDeltas(mergeDeltaLists(effectDeltas(inserted, 1)))
+    if (inserted.from_debt_id) await syncDebtDraw(inserted.id, inserted.from_debt_id, inserted.amount)
 
     setAmount('')
     setDebtId('')
     setFromAccountId('')
+    setFromDebtId('')
     setToAccountId('')
     loadTransactions()
   }
 
   function flashRow(id) {
     setFlashId(id)
-    setTimeout(() => {
-      setFlashId((current) => (current === id ? null : current))
-    }, 900)
+    setTimeout(() => setFlashId((current) => (current === id ? null : current)), 900)
   }
 
-  async function handleInlineCategoryChange(id, categoryId) {
-    const value = categoryId || null
+  async function handleInlineCategoryChange(id, nextCategoryId) {
+    const value = nextCategoryId || null
     const previous = transactions.find((t) => t.id === id)?.category_id ?? null
-
     setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, category_id: value } : t)))
-
     const { error } = await supabase.from('transactions').update({ category_id: value }).eq('id', id)
-
     if (error) {
       console.log(error.message)
-      setTransactions((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, category_id: previous } : t)),
-      )
+      setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, category_id: previous } : t)))
       return
     }
-
     flashRow(id)
   }
 
@@ -248,33 +226,27 @@ function Transactions() {
       .select('*')
       .eq('id', id)
       .single()
-
     if (fetchError) {
       console.log(fetchError.message)
       return
     }
-
     if (oldTxn.direction === newDirection) return
 
     const newTxn = { ...oldTxn, direction: newDirection }
-
-    const deltaMap = mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1))
-    const balancesOk = await applyBalanceDeltas(deltaMap)
+    const balancesOk = await applyBalanceDeltas(
+      mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1)),
+    )
     if (!balancesOk) return
 
     const { error: updateError } = await supabase
       .from('transactions')
       .update({ direction: newDirection })
       .eq('id', id)
-
     if (updateError) {
       console.log(updateError.message)
       return
     }
-
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, direction: newDirection } : t)),
-    )
+    setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, direction: newDirection } : t)))
     flashRow(id)
   }
 
@@ -286,6 +258,7 @@ function Transactions() {
     setEditDebtId(txn.debt_id || '')
     setEditDirection(txn.direction || 'out')
     setEditFromAccountId(txn.from_account_id || '')
+    setEditFromDebtId(txn.from_debt_id || '')
     setEditToAccountId(txn.to_account_id || '')
     setEditError(null)
     setQuickDebtId('')
@@ -294,37 +267,27 @@ function Transactions() {
 
   async function loadReceiptsForTxn(txnId) {
     const { data, error } = await supabase.from('documents').select('*').eq('transaction_id', txnId)
-
     if (error) {
-      console.error('Failed to load receipts', error)
+      console.log('Failed to load receipts', error.message)
       return
     }
-
     const withUrls = await Promise.all(
       (data || []).map(async (doc) => {
         const { data: signed, error: signError } = await supabase.storage
           .from('receipts')
           .createSignedUrl(doc.storage_path, 3600)
-
-        if (signError) {
-          console.error('Failed to create signed URL', signError)
-          return { ...doc, url: null }
-        }
-
+        if (signError) return { ...doc, url: null }
         return { ...doc, url: signed.signedUrl }
       }),
     )
-
     setReceiptsByTxn((prev) => ({ ...prev, [txnId]: withUrls }))
   }
 
   async function handleAddReceipt(txn, file) {
     if (!file) return
-
     setUploadingReceiptId(txn.id)
 
     const { data: userData, error: userError } = await supabase.auth.getUser()
-
     if (userError || !userData?.user) {
       console.log(userError ? userError.message : 'No authenticated user')
       setUploadingReceiptId(null)
@@ -337,7 +300,6 @@ function Transactions() {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('receipts')
       .upload(path, file)
-
     if (uploadError) {
       console.log(uploadError.message)
       setUploadingReceiptId(null)
@@ -351,7 +313,6 @@ function Transactions() {
       doc_date: txn.txn_date,
       amount: txn.amount,
     })
-
     if (insertError) {
       console.log(insertError.message)
       setUploadingReceiptId(null)
@@ -382,11 +343,12 @@ function Transactions() {
       .select('*')
       .eq('id', id)
       .single()
-
     if (fetchError) {
       console.log(fetchError.message)
       return
     }
+
+    const nextFromDebtId = editDirection === 'out' ? editFromDebtId || null : null
 
     const newTxn = {
       txn_date: editDate,
@@ -395,19 +357,22 @@ function Transactions() {
       debt_id: editDebtId || null,
       direction: editDirection,
       from_account_id: editFromAccountId || null,
+      from_debt_id: nextFromDebtId,
       to_account_id: editToAccountId || null,
     }
 
-    const deltaMap = mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1))
-    const balancesOk = await applyBalanceDeltas(deltaMap)
+    const balancesOk = await applyBalanceDeltas(
+      mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1)),
+    )
     if (!balancesOk) return
 
     const { error: updateError } = await supabase.from('transactions').update(newTxn).eq('id', id)
-
     if (updateError) {
       console.log(updateError.message)
       return
     }
+
+    await syncDebtDraw(id, nextFromDebtId, newTxn.amount)
 
     setEditingId(null)
     loadTransactions()
@@ -415,34 +380,28 @@ function Transactions() {
 
   async function handleMarkAsDebtPayment(txn, debtIdToUse) {
     if (!debtIdToUse) return
-
     const { data: oldTxn, error: fetchError } = await supabase
       .from('transactions')
       .select('*')
       .eq('id', txn.id)
       .single()
-
     if (fetchError) {
       console.log(fetchError.message)
       return
     }
-
     const newTxn = { ...oldTxn, direction: 'out', debt_id: debtIdToUse }
-
-    const deltaMap = mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1))
-    const balancesOk = await applyBalanceDeltas(deltaMap)
+    const balancesOk = await applyBalanceDeltas(
+      mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1)),
+    )
     if (!balancesOk) return
-
     const { error: updateError } = await supabase
       .from('transactions')
       .update({ direction: 'out', debt_id: debtIdToUse })
       .eq('id', txn.id)
-
     if (updateError) {
       console.log(updateError.message)
       return
     }
-
     setEditingId(null)
     setQuickDebtId('')
     loadTransactions()
@@ -450,45 +409,37 @@ function Transactions() {
 
   async function handleMarkAsBorrowed(txn, debtIdToUse) {
     if (!debtIdToUse) return
-
     const { data: oldTxn, error: fetchError } = await supabase
       .from('transactions')
       .select('*')
       .eq('id', txn.id)
       .single()
-
     if (fetchError) {
       console.log(fetchError.message)
       return
     }
-
     const newTxn = { ...oldTxn, direction: 'in', debt_id: debtIdToUse }
-
-    const deltaMap = mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1))
-    const balancesOk = await applyBalanceDeltas(deltaMap)
+    const balancesOk = await applyBalanceDeltas(
+      mergeDeltaLists(effectDeltas(oldTxn, -1), effectDeltas(newTxn, 1)),
+    )
     if (!balancesOk) return
-
     const { error: updateError } = await supabase
       .from('transactions')
       .update({ direction: 'in', debt_id: debtIdToUse })
       .eq('id', txn.id)
-
     if (updateError) {
       console.log(updateError.message)
       return
     }
-
     const { error: entryError } = await supabase.from('debt_entries').insert({
       debt_id: debtIdToUse,
       amount: Number(oldTxn.amount) || 0,
       direction: 'draw',
     })
-
     if (entryError) {
       console.log(entryError.message)
       return
     }
-
     setEditingId(null)
     setQuickDebtId('')
     loadTransactions()
@@ -500,36 +451,38 @@ function Transactions() {
       .select('*')
       .eq('id', id)
       .single()
-
     if (fetchError) {
       console.log(fetchError.message)
       return
     }
 
-    const deltaMap = mergeDeltaLists(effectDeltas(oldTxn, -1))
-    const balancesOk = await applyBalanceDeltas(deltaMap)
+    const balancesOk = await applyBalanceDeltas(mergeDeltaLists(effectDeltas(oldTxn, -1)))
     if (!balancesOk) return
 
-    const { error: deleteError } = await supabase.from('transactions').delete().eq('id', id)
+    // remove any auto-draw this transaction created on a debt
+    await supabase.from('debt_entries').delete().eq('transaction_id', id)
 
+    const { error: deleteError } = await supabase.from('transactions').delete().eq('id', id)
     if (deleteError) {
       console.log(deleteError.message)
       return
     }
-
     if (editingId === id) setEditingId(null)
     loadTransactions()
   }
 
   function accountName(accountId) {
-    const account = accounts.find((a) => a.id === accountId)
-    return account ? account.name : ''
+    return accounts.find((a) => a.id === accountId)?.name || ''
+  }
+  function debtName(id) {
+    return debts.find((d) => d.id === id)?.name || 'debt'
   }
 
   function accountFlowLabel(txn) {
     const from = accountName(txn.from_account_id)
     const to = accountName(txn.to_account_id)
     if (txn.direction === 'transfer' && from && to) return `${from} → ${to}`
+    if (txn.direction === 'out' && txn.from_debt_id) return `from ${debtName(txn.from_debt_id)}`
     if (txn.direction === 'out' && from) return `from ${from}`
     if (txn.direction === 'in' && to) return `to ${to}`
     return ''
@@ -549,7 +502,7 @@ function Transactions() {
 
       <PeriodSelector />
 
-      <form onSubmit={handleAdd}>
+      <form className="money-form" onSubmit={handleAdd}>
         <div className="field-row">
           <input
             type="number"
@@ -573,18 +526,12 @@ function Transactions() {
           </select>
         </div>
         <div className="field-row">
-          <select
-            value={fromAccountId}
-            onChange={(e) => setFromAccountId(e.target.value)}
-            required={direction === 'transfer'}
-          >
-            <option value="">From account —</option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
+          <FromSelect
+            value={fromValue(fromAccountId, fromDebtId)}
+            onChange={(e) => applyFromValue(e.target.value, setFromAccountId, setFromDebtId)}
+            forDirection={direction}
+            requiredTransfer={direction === 'transfer'}
+          />
           <select
             value={toAccountId}
             onChange={(e) => setToAccountId(e.target.value)}
@@ -600,6 +547,9 @@ function Transactions() {
         </div>
         {direction === 'transfer' && (
           <p className="list-row-sub">Transfers need both a from account and a to account.</p>
+        )}
+        {fromDebtId && direction === 'out' && (
+          <p className="list-row-sub">This adds {formatMoney(Number(amount) || 0)} to {debtName(fromDebtId)}.</p>
         )}
         <label>
           Debt payment toward (optional)
@@ -625,9 +575,7 @@ function Transactions() {
           />
           Needs a category
         </label>
-        {uncategorizedCount > 0 && (
-          <span className="list-row-sub">{uncategorizedCount} untagged</span>
-        )}
+        {uncategorizedCount > 0 && <span className="list-row-sub">{uncategorizedCount} untagged</span>}
       </div>
 
       <ul className="list">
@@ -639,12 +587,7 @@ function Transactions() {
             {editingId === txn.id ? (
               <form className="transaction-edit-form" onSubmit={(e) => handleSaveEdit(e, txn.id)}>
                 <div className="field-row">
-                  <input
-                    type="date"
-                    value={editDate}
-                    onChange={(e) => setEditDate(e.target.value)}
-                    required
-                  />
+                  <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
                   <input
                     type="number"
                     step="0.01"
@@ -659,10 +602,7 @@ function Transactions() {
                   </select>
                 </div>
                 <div className="field-row">
-                  <select
-                    value={editCategoryId}
-                    onChange={(e) => setEditCategoryId(e.target.value)}
-                  >
+                  <select value={editCategoryId} onChange={(e) => setEditCategoryId(e.target.value)}>
                     <option value="">—</option>
                     {categories.map((category) => (
                       <option key={category.id} value={category.id}>
@@ -670,18 +610,12 @@ function Transactions() {
                       </option>
                     ))}
                   </select>
-                  <select
-                    value={editFromAccountId}
-                    onChange={(e) => setEditFromAccountId(e.target.value)}
-                    required={editDirection === 'transfer'}
-                  >
-                    <option value="">From account —</option>
-                    {accounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
+                  <FromSelect
+                    value={fromValue(editFromAccountId, editFromDebtId)}
+                    onChange={(e) => applyFromValue(e.target.value, setEditFromAccountId, setEditFromDebtId)}
+                    forDirection={editDirection}
+                    requiredTransfer={editDirection === 'transfer'}
+                  />
                   <select
                     value={editToAccountId}
                     onChange={(e) => setEditToAccountId(e.target.value)}
@@ -696,9 +630,7 @@ function Transactions() {
                   </select>
                 </div>
                 {editDirection === 'transfer' && (
-                  <p className="list-row-sub">
-                    Transfers need both a from account and a to account.
-                  </p>
+                  <p className="list-row-sub">Transfers need both a from account and a to account.</p>
                 )}
                 <div className="field-row">
                   <select value={editDebtId} onChange={(e) => setEditDebtId(e.target.value)}>
@@ -758,20 +690,12 @@ function Transactions() {
                     }}
                   />
                 </label>
-                {uploadingReceiptId === txn.id && (
-                  <p className="list-row-sub">Uploading…</p>
-                )}
+                {uploadingReceiptId === txn.id && <p className="list-row-sub">Uploading…</p>}
                 {receiptsByTxn[txn.id]?.length > 0 && (
                   <div className="receipt-thumb-row">
                     {receiptsByTxn[txn.id].map((doc) =>
                       doc.url ? (
-                        <a
-                          key={doc.id}
-                          href={doc.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="receipt-thumb-link"
-                        >
+                        <a key={doc.id} href={doc.url} target="_blank" rel="noreferrer" className="receipt-thumb-link">
                           <img src={doc.url} alt="Receipt" className="receipt-thumb" />
                         </a>
                       ) : (
@@ -830,20 +754,10 @@ function Transactions() {
                     </button>
                   </div>
                   <span className="money">{formatMoney(txn.amount)}</span>
-                  <button
-                    type="button"
-                    className="icon-button"
-                    onClick={() => startEdit(txn)}
-                    aria-label="Edit transaction"
-                  >
+                  <button type="button" className="icon-button" onClick={() => startEdit(txn)} aria-label="Edit transaction">
                     ✎
                   </button>
-                  <button
-                    type="button"
-                    className="icon-button"
-                    onClick={() => handleDelete(txn.id)}
-                    aria-label="Delete transaction"
-                  >
+                  <button type="button" className="icon-button" onClick={() => handleDelete(txn.id)} aria-label="Delete transaction">
                     ×
                   </button>
                 </div>

@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/format'
 
@@ -26,8 +25,10 @@ function extensionFromFile(file) {
 function Receipts() {
   const [documents, setDocuments] = useState([])
   const [transactions, setTransactions] = useState([])
+  const [categories, setCategories] = useState([])
   const [signedUrls, setSignedUrls] = useState({})
   const [filterKind, setFilterKind] = useState('')
+  const [expandedId, setExpandedId] = useState(null)
 
   const [uploadKind, setUploadKind] = useState('invoice')
   const [uploadDate, setUploadDate] = useState('')
@@ -36,30 +37,33 @@ function Receipts() {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
 
-  async function loadDocuments() {
+  const loadDocuments = useCallback(async () => {
     const { data, error } = await supabase
       .from('documents')
       .select('*')
       .order('doc_date', { ascending: false })
-
     if (error) {
-      console.error('Failed to load documents', error)
+      console.log('Failed to load documents', error.message)
       return
     }
-
     setDocuments(data)
-  }
+  }, [])
 
-  async function loadTransactionsLite() {
-    const { data, error } = await supabase.from('transactions').select('id, txn_date, amount, note')
+  const loadTransactionsLite = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('id, txn_date, amount, note')
+      .order('txn_date', { ascending: false })
+    if (!error && data) setTransactions(data)
+  }, [])
 
-    if (error) {
-      console.error('Failed to load transactions', error)
-      return
-    }
-
-    setTransactions(data)
-  }
+  const loadCategories = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .or('archived.is.null,archived.eq.false')
+    if (!error && data) setCategories(data)
+  }, [])
 
   async function loadSignedUrls(docs) {
     const entries = await Promise.all(
@@ -67,23 +71,18 @@ function Receipts() {
         const { data, error } = await supabase.storage
           .from('receipts')
           .createSignedUrl(doc.storage_path, 3600)
-
-        if (error) {
-          console.error('Failed to create signed URL', error)
-          return [doc.id, null]
-        }
-
+        if (error) return [doc.id, null]
         return [doc.id, data.signedUrl]
       }),
     )
-
     setSignedUrls(Object.fromEntries(entries))
   }
 
   useEffect(() => {
     loadDocuments()
     loadTransactionsLite()
-  }, [])
+    loadCategories()
+  }, [loadDocuments, loadTransactionsLite, loadCategories])
 
   useEffect(() => {
     if (documents.length === 0) return
@@ -92,17 +91,14 @@ function Receipts() {
 
   async function handleStandaloneUpload(e) {
     e.preventDefault()
-
     if (!uploadFile) return
 
     setUploading(true)
     setUploadError(null)
 
     const { data: userData, error: userError } = await supabase.auth.getUser()
-
     if (userError || !userData?.user) {
       const message = userError ? userError.message : 'No authenticated user'
-      console.log(message)
       setUploadError(message)
       setUploading(false)
       return
@@ -114,9 +110,7 @@ function Receipts() {
     const { data: uploadData, error: uploadErr } = await supabase.storage
       .from('receipts')
       .upload(path, uploadFile)
-
     if (uploadErr) {
-      console.log(uploadErr.message)
       setUploadError(uploadErr.message)
       setUploading(false)
       return
@@ -129,9 +123,7 @@ function Receipts() {
       doc_date: uploadDate,
       amount: uploadAmount ? Number(uploadAmount) : null,
     })
-
     if (insertError) {
-      console.log(insertError.message)
       setUploadError(insertError.message)
       setUploading(false)
       return
@@ -145,31 +137,46 @@ function Receipts() {
     loadDocuments()
   }
 
+  function updateLocal(id, patch) {
+    setDocuments((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)))
+  }
+
+  async function persist(id, patch) {
+    updateLocal(id, patch)
+    const { error } = await supabase.from('documents').update(patch).eq('id', id)
+    if (error) {
+      console.log('Failed to save document', error.message)
+      loadDocuments()
+    }
+  }
+
   async function handleDelete(doc) {
     const { error: storageError } = await supabase.storage.from('receipts').remove([doc.storage_path])
-
     if (storageError) {
       console.log(storageError.message)
       return
     }
-
     const { error: deleteError } = await supabase.from('documents').delete().eq('id', doc.id)
-
     if (deleteError) {
       console.log(deleteError.message)
       return
     }
-
     loadDocuments()
   }
 
-  function linkedTxnLabel(transactionId) {
+  function txnLabel(transactionId) {
     const txn = transactions.find((t) => t.id === transactionId)
-    if (!txn) return 'View linked transaction'
-    return `${txn.note || 'Transaction'} · ${formatMoney(txn.amount)}`
+    if (!txn) return null
+    return `${txn.note || 'Transaction'} · ${txn.txn_date || ''} · ${formatMoney(txn.amount)}`
   }
 
-  const filteredDocuments = filterKind ? documents.filter((doc) => doc.kind === filterKind) : documents
+  function categoryName(id) {
+    return categories.find((c) => c.id === id)?.name
+  }
+
+  const filteredDocuments = filterKind
+    ? documents.filter((doc) => doc.kind === filterKind)
+    : documents
 
   return (
     <section className="receipts-page">
@@ -178,10 +185,10 @@ function Receipts() {
       <div className="card">
         <h2>Upload a document</h2>
         <p className="list-row-sub">
-          Add an invoice, bank statement, or other document that isn't tied to a specific
-          transaction.
+          Add an invoice, bank statement, or other document. You can tag it with a category and
+          link it to a transaction after.
         </p>
-        <form onSubmit={handleStandaloneUpload}>
+        <form className="money-form" onSubmit={handleStandaloneUpload}>
           <div className="field-row">
             <select value={uploadKind} onChange={(e) => setUploadKind(e.target.value)}>
               <option value="receipt">Receipt</option>
@@ -189,12 +196,7 @@ function Receipts() {
               <option value="statement">Statement</option>
               <option value="other">Other</option>
             </select>
-            <input
-              type="date"
-              value={uploadDate}
-              onChange={(e) => setUploadDate(e.target.value)}
-              required
-            />
+            <input type="date" value={uploadDate} onChange={(e) => setUploadDate(e.target.value)} required />
             <input
               type="number"
               step="0.01"
@@ -219,11 +221,7 @@ function Receipts() {
       <div className="card">
         <h2>All documents</h2>
         <div className="transaction-filter-bar">
-          <select
-            className="inline-select"
-            value={filterKind}
-            onChange={(e) => setFilterKind(e.target.value)}
-          >
+          <select className="inline-select" value={filterKind} onChange={(e) => setFilterKind(e.target.value)}>
             <option value="">All kinds</option>
             <option value="receipt">Receipt</option>
             <option value="invoice">Invoice</option>
@@ -239,50 +237,92 @@ function Receipts() {
           <p className="empty-text">No documents yet.</p>
         ) : (
           <ul className="list">
-            {filteredDocuments.map((doc) => (
-              <li key={doc.id} className="list-row document-row">
-                <div className="document-preview">
-                  {signedUrls[doc.id] ? (
-                    isImagePath(doc.storage_path) ? (
-                      <a href={signedUrls[doc.id]} target="_blank" rel="noreferrer">
+            {filteredDocuments.map((doc) => {
+              const open = expandedId === doc.id
+              return (
+                <li key={doc.id} className="list-row document-row-wrap">
+                  <button
+                    type="button"
+                    className="document-row-toggle"
+                    onClick={() => setExpandedId(open ? null : doc.id)}
+                  >
+                    <span className="document-preview">
+                      {signedUrls[doc.id] && isImagePath(doc.storage_path) ? (
                         <img src={signedUrls[doc.id]} alt={doc.kind} className="receipt-thumb" />
-                      </a>
-                    ) : (
-                      <a
-                        href={signedUrls[doc.id]}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="document-file-link"
+                      ) : (
+                        <span className="list-row-sub">{isImagePath(doc.storage_path) ? '…' : 'File'}</span>
+                      )}
+                    </span>
+                    <span className="list-row-main document-info">
+                      <span className="list-row-title">{capitalize(doc.kind)}</span>
+                      <span className="list-row-sub">
+                        {doc.doc_date || 'No date'}
+                        {doc.amount ? ` · ${formatMoney(doc.amount)}` : ''}
+                        {categoryName(doc.category_id) ? ` · ${categoryName(doc.category_id)}` : ''}
+                        {doc.transaction_id ? ' · linked' : ''}
+                      </span>
+                    </span>
+                    <span className="row-action-btn">{open ? 'Close' : 'Open'}</span>
+                  </button>
+
+                  {open && (
+                    <div className="document-detail">
+                      {signedUrls[doc.id] && (
+                        <a href={signedUrls[doc.id]} target="_blank" rel="noreferrer" className="document-file-link">
+                          {isImagePath(doc.storage_path) ? (
+                            <img src={signedUrls[doc.id]} alt={doc.kind} className="document-detail-img" />
+                          ) : (
+                            'View file ↗'
+                          )}
+                        </a>
+                      )}
+
+                      <label className="stacked-field">
+                        Money category
+                        <select
+                          value={doc.category_id || ''}
+                          onChange={(e) => persist(doc.id, { category_id: e.target.value || null })}
+                        >
+                          <option value="">— none —</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="stacked-field">
+                        Linked transaction
+                        <select
+                          value={doc.transaction_id || ''}
+                          onChange={(e) => persist(doc.id, { transaction_id: e.target.value || null })}
+                        >
+                          <option value="">— none —</option>
+                          {transactions.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {(t.note || 'Transaction')} · {t.txn_date || ''} · {formatMoney(t.amount)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      {doc.transaction_id && txnLabel(doc.transaction_id) && (
+                        <p className="list-row-sub">Linked to: {txnLabel(doc.transaction_id)}</p>
+                      )}
+
+                      <button
+                        type="button"
+                        className="row-action-btn row-action-btn-danger"
+                        onClick={() => handleDelete(doc)}
                       >
-                        View file
-                      </a>
-                    )
-                  ) : (
-                    <span className="list-row-sub">No preview</span>
+                        Delete document
+                      </button>
+                    </div>
                   )}
-                </div>
-                <div className="list-row-main document-info">
-                  <span className="list-row-title">{capitalize(doc.kind)}</span>
-                  <span className="list-row-sub">
-                    {doc.doc_date || 'No date'}
-                    {doc.amount ? ` · ${formatMoney(doc.amount)}` : ''}
-                  </span>
-                  {doc.transaction_id && (
-                    <Link to="/money/transactions" className="document-txn-link">
-                      → {linkedTxnLabel(doc.transaction_id)}
-                    </Link>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="icon-button document-delete"
-                  onClick={() => handleDelete(doc)}
-                  aria-label="Delete document"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
