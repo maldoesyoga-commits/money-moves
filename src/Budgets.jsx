@@ -12,8 +12,30 @@ import {
 } from './lib/period'
 import { isSpendingTxn } from './lib/spending'
 import EmptyState from './EmptyState'
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts'
 
 const LOOKBACK = 6
+
+const SAGE = '#3F6B5C'
+const CLAY = '#B87333'
+const TEXT_SOFT = '#6E7A75'
+const BORDER = '#E1E2DC'
+
+const CHART_TOOLTIP = {
+  background: '#fbfaf6',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 10,
+  fontSize: 13,
+}
 
 function Budgets() {
   const { period, statementDay } = usePeriod()
@@ -208,6 +230,15 @@ function Budgets() {
 
   const groups = [...new Set(rows.map((row) => row.category.category_group || 'Other'))]
 
+  const budgetTrend = periods.map((row) => {
+    const budgeted = budgets
+      .filter((budget) => budget.period_start === row.startKey)
+      .reduce((sum, budget) => sum + Number(budget.amount), 0)
+    const actual = categories.reduce((sum, category) => sum + spentIn(category.id, row), 0)
+    return { label: periodShortLabel(row, statementDay), budget: budgeted, actual }
+  })
+  const hasBudgetTrend = budgetTrend.some((entry) => entry.budget > 0 || entry.actual > 0)
+
   return (
     <section className="budgets-page">
       <div className="card">
@@ -341,6 +372,39 @@ function Budgets() {
           )
         })
       )}
+
+      <div className="card">
+        <h2>Budget vs actual</h2>
+        <p className="list-row-sub">Last {LOOKBACK} periods</p>
+        <div className="chart-body">
+          {hasBudgetTrend ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={budgetTrend} margin={{ top: 4, right: 12, bottom: 4, left: 0 }}>
+                <CartesianGrid vertical={false} stroke={BORDER} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: TEXT_SOFT, fontSize: 12 }}
+                  axisLine={{ stroke: BORDER }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tickFormatter={(value) => formatMoney(value)}
+                  tick={{ fill: TEXT_SOFT, fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={70}
+                />
+                <Tooltip formatter={(value) => formatMoney(value)} contentStyle={CHART_TOOLTIP} />
+                <Legend verticalAlign="top" height={28} wrapperStyle={{ fontSize: 13, color: TEXT_SOFT }} />
+                <Bar dataKey="budget" name="Budget" fill={SAGE} radius={[4, 4, 0, 0]} maxBarSize={20} />
+                <Bar dataKey="actual" name="Actual" fill={CLAY} radius={[4, 4, 0, 0]} maxBarSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="empty-text">No budget history yet.</p>
+          )}
+        </div>
+      </div>
 
       <div className="card">
         <h2>Last {LOOKBACK} periods</h2>
