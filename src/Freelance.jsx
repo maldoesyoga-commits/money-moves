@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate, NavLink } from 'react-router-dom'
 import Clients from './Clients'
+import ClientDetail from './ClientDetail'
+import FreelanceTasks from './FreelanceTasks'
 import FreelanceProjects from './FreelanceProjects'
 import FreelanceProjectDetail from './FreelanceProjectDetail'
 import TimeLog from './TimeLog'
@@ -7,6 +9,7 @@ import Invoices from './Invoices'
 
 const TABS = [
   { to: '/freelance', label: 'Clients', end: true },
+  { to: '/freelance/tasks', label: 'Tasks' },
   { to: '/freelance/projects', label: 'Projects' },
   { to: '/freelance/time', label: 'Time' },
   { to: '/freelance/invoices', label: 'Invoices' },
@@ -35,6 +38,8 @@ function Freelance() {
 
       <Routes>
         <Route path="/" element={<Clients />} />
+        <Route path="clients/:clientId" element={<ClientDetail />} />
+        <Route path="tasks" element={<FreelanceTasks />} />
         <Route path="projects" element={<FreelanceProjects />} />
         <Route path="projects/:projectId" element={<FreelanceProjectDetail />} />
         <Route path="time" element={<TimeLog />} />

@@ -42,6 +42,7 @@ function Transactions() {
   const [accounts, setAccounts] = useState([])
 
   const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [debtId, setDebtId] = useState('')
   const [direction, setDirection] = useState('out')
@@ -59,6 +60,7 @@ function Transactions() {
   const [editingId, setEditingId] = useState(null)
   const [editDate, setEditDate] = useState('')
   const [editAmount, setEditAmount] = useState('')
+  const [editNote, setEditNote] = useState('')
   const [editCategoryId, setEditCategoryId] = useState('')
   const [editDebtId, setEditDebtId] = useState('')
   const [editDirection, setEditDirection] = useState('out')
@@ -173,6 +175,7 @@ function Transactions() {
 
     const payload = {
       amount: Number(amount),
+      note: note.trim() || null,
       category_id: categoryId || null,
       direction,
       from_account_id: fromAccountId || null,
@@ -195,6 +198,7 @@ function Transactions() {
     if (inserted.from_debt_id) await syncDebtDraw(inserted.id, inserted.from_debt_id, inserted.amount)
 
     setAmount('')
+    setNote('')
     setDebtId('')
     setFromAccountId('')
     setFromDebtId('')
@@ -253,6 +257,7 @@ function Transactions() {
   function startEdit(txn) {
     setEditingId(txn.id)
     setEditDate(txn.txn_date || '')
+    setEditNote(txn.note || '')
     setEditAmount(String(txn.amount ?? ''))
     setEditCategoryId(txn.category_id || '')
     setEditDebtId(txn.debt_id || '')
@@ -352,6 +357,7 @@ function Transactions() {
 
     const newTxn = {
       txn_date: editDate,
+      note: editNote.trim() || null,
       amount: Number(editAmount),
       category_id: editCategoryId || null,
       debt_id: editDebtId || null,
@@ -503,6 +509,12 @@ function Transactions() {
       <PeriodSelector />
 
       <form className="money-form" onSubmit={handleAdd}>
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="description (e.g. groceries at Costco)"
+        />
         <div className="field-row">
           <input
             type="number"
@@ -586,6 +598,12 @@ function Transactions() {
           >
             {editingId === txn.id ? (
               <form className="transaction-edit-form" onSubmit={(e) => handleSaveEdit(e, txn.id)}>
+                <input
+                  type="text"
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                  placeholder="description"
+                />
                 <div className="field-row">
                   <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
                   <input
@@ -717,7 +735,24 @@ function Transactions() {
             ) : (
               <div className="transaction-row-body">
                 <div className="list-row-main">
-                  <span className="list-row-title">{txn.note || 'No description'}</span>
+                  <button
+                    type="button"
+                    className="list-row-title txn-title-edit"
+                    onClick={() => startEdit(txn)}
+                    title="Click to edit this transaction"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      margin: 0,
+                      font: 'inherit',
+                      color: 'inherit',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {txn.note || 'Add a description'}
+                  </button>
                   <span className="list-row-sub">
                     {txn.txn_date} · {directionLabel(txn.direction)}
                     {accountFlowLabel(txn) ? ` · ${accountFlowLabel(txn)}` : ''}

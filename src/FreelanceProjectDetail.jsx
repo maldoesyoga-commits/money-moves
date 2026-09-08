@@ -6,6 +6,8 @@ import { formatMoney } from './lib/format'
 import { formatHours } from './lib/freelance'
 import { todayISO, formatDueDate, isOverdue } from './lib/taskDates'
 import { report } from './lib/report'
+import MilestoneList from './MilestoneList'
+import ProjectResources from './ProjectResources'
 
 const STATUSES = [
   { value: 'active', label: 'Active' },
@@ -19,6 +21,7 @@ const TABS = [
   { key: 'tasks', label: 'Tasks' },
   { key: 'notes', label: 'Notes' },
   { key: 'plan', label: 'Plan' },
+  { key: 'resources', label: 'Resources' },
 ]
 
 function FreelanceProjectDetail() {
@@ -298,6 +301,11 @@ function FreelanceProjectDetail() {
             </div>
           </div>
 
+          <MilestoneList
+            freelanceProjectId={projectId}
+            hint="The moments this job is aiming at — not the tasks that get you there."
+          />
+
           {entries.length > 0 && (
             <div className="card">
               <div className="project-scope-header">
@@ -451,6 +459,8 @@ function FreelanceProjectDetail() {
           </p>
         </div>
       )}
+
+      {tab === 'resources' && <ProjectResources freelanceProjectId={projectId} />}
     </>
   )
 }

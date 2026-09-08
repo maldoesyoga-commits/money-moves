@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import TaskList from './TaskList'
 import ProjectTimeline from './ProjectTimeline'
 import MilestoneList from './MilestoneList'
+import ProjectResources from './ProjectResources'
 import EmptyState from './EmptyState'
 import { todayISO, formatDueDate } from './lib/taskDates'
 import { report } from './lib/report'
@@ -37,6 +38,7 @@ const TABS = [
   { key: 'notes', label: 'Notes' },
   { key: 'content', label: 'Content' },
   { key: 'timeline', label: 'Timeline' },
+  { key: 'resources', label: 'Resources' },
 ]
 
 function ProjectDetail() {
@@ -676,6 +678,8 @@ function ProjectDetail() {
       {tab === 'timeline' && (
         <ProjectTimeline project={project} tasks={tasks} content={content} />
       )}
+
+      {tab === 'resources' && <ProjectResources projectId={projectId} />}
     </>
   )
 }

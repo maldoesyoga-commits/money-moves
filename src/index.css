@@ -43,9 +43,17 @@ body {
 }
 
 .app-shell {
-  max-width: 760px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 48px 20px 80px;
+}
+
+/* A touch more side breathing room once the shell is wide. */
+@media (min-width: 800px) {
+  .app-shell {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
 }
 
 h1,
@@ -5450,6 +5458,9 @@ form.field-row {
 
 .dash-stats {
   margin-bottom: 16px;
+  /* auto-fit (not the inherited auto-fill) so the four tiles stretch to
+     fill the wide shell instead of bunching to the left. */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
 a.dash-stat-link {
@@ -5708,4 +5719,11 @@ a.dash-stat-link:hover {
   align-items: center;
   gap: 8px;
   font-size: 13px;
+}
+
+/* Whole-row links (client cards, project rows) shouldn't read as links. */
+.client-card-link {
+  text-decoration: none;
+  color: inherit;
+  width: 100%;
 }

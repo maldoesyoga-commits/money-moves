@@ -52,10 +52,20 @@ function TimeLog() {
   const [range, setRange] = useState('week')
   const [now, setNow] = useState(Date.now())
 
-  const [entryDate, setEntryDate] = useState(todayISO())
-  const [duration, setDuration] = useState('')
-  const [projectId, setProjectId] = useState('')
+  // Which entry mode is showing: the live timer, or a past session by hand.
+  const [mode, setMode] = useState('now')
+
+  // Live-timer box.
   const [notes, setNotes] = useState('')
+  const [projectId, setProjectId] = useState('')
+
+  // Past-session box — fully self-contained, its own fields.
+  const [pastDate, setPastDate] = useState(todayISO())
+  const [pastDuration, setPastDuration] = useState('')
+  const [pastNotes, setPastNotes] = useState('')
+  const [pastProjectId, setPastProjectId] = useState('')
+  const [pastClientId, setPastClientId] = useState('')
+  const [pastBillable, setPastBillable] = useState(true)
 
   const loadEntries = useCallback(async () => {
     const { data, error } = await supabase
@@ -168,17 +178,23 @@ function TimeLog() {
     loadEntries()
   }
 
-  async function handleAdd(e) {
+  async function handleAddPast(e) {
     e.preventDefault()
 
-    const minutes = parseDuration(duration)
+    const minutes = parseDuration(pastDuration)
     if (!minutes) return
 
-    const project = projectFor(projectId)
-    const payload = { entry_date: entryDate, minutes }
-    if (projectId) payload.project_id = projectId
-    if (project?.client_id) payload.client_id = project.client_id
-    if (notes.trim()) payload.notes = notes.trim()
+    const project = projectFor(pastProjectId)
+    const payload = {
+      entry_date: pastDate,
+      minutes,
+      billable: pastBillable,
+    }
+    if (pastProjectId) payload.project_id = pastProjectId
+    // An explicit client wins; otherwise inherit the project's client.
+    const clientId = pastClientId || project?.client_id || null
+    if (clientId) payload.client_id = clientId
+    if (pastNotes.trim()) payload.notes = pastNotes.trim()
 
     const { error } = await supabase.from('time_entries').insert(payload)
 
@@ -187,8 +203,12 @@ function TimeLog() {
       return
     }
 
-    setDuration('')
-    setNotes('')
+    setPastDuration('')
+    setPastNotes('')
+    setPastProjectId('')
+    setPastClientId('')
+    setPastBillable(true)
+    setPastDate(todayISO())
     loadEntries()
   }
 
@@ -249,82 +269,164 @@ function TimeLog() {
     return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
   }
 
+  // A running timer belongs to the live view — keep it visible there so it can
+  // always be stopped, whichever mode was last chosen.
+  const showNow = mode === 'now' || Boolean(running)
+
   return (
     <>
-      <div className="card timer-card">
-        <div className="project-scope-header">
-          <h2>Timer</h2>
-          {running && <span className="list-row-sub">started {clockTime(running.started_at)}</span>}
-        </div>
-
-        <p className={`timer-readout${running ? ' is-running' : ''}`}>
-          {running ? elapsedText(running.started_at, now) : '0:00:00'}
-        </p>
-
-        {/* What you're doing is the thing you always fill in, so it gets the
-            whole width. The project is optional and sits underneath. */}
-        <input
-          type="text"
-          className="quick-add-title"
-          value={running ? running.notes || notes : notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="what you're working on"
-          disabled={Boolean(running?.notes)}
-        />
-
-        <div className="field-row timer-actions">
-          {running ? (
-            <button type="button" onClick={stopTimer}>
-              End time
-            </button>
-          ) : (
-            <button type="button" onClick={startTimer}>
-              Start time
-            </button>
-          )}
-          <label className="filter-toggle timer-project">
-            Project (optional)
-            <select
-              className="inline-select"
-              value={running ? running.project_id || '' : projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              disabled={Boolean(running)}
-            >
-              <option value="">None</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <p className="list-row-sub">
-          {running
-            ? 'Ending it works out the minutes between start and end and files the session.'
-            : 'Start now, or log a past session by hand below.'}
-        </p>
-      </div>
-
       <div className="card">
-        <h2>Log a session by hand</h2>
+        <nav className="segmented-nav">
+          <button
+            type="button"
+            className={`segmented-tab${mode === 'now' ? ' active' : ''}`}
+            onClick={() => setMode('now')}
+          >
+            Log now
+          </button>
+          <button
+            type="button"
+            className={`segmented-tab${mode === 'past' ? ' active' : ''}`}
+            onClick={() => setMode('past')}
+          >
+            Log a past session
+          </button>
+        </nav>
 
-        <form onSubmit={handleAdd}>
-          <div className="field-row">
-            <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} />
+        {showNow ? (
+          <div className="timer-panel">
+            <div className="project-scope-header">
+              <h2>Timer</h2>
+              {running && (
+                <span className="list-row-sub">started {clockTime(running.started_at)}</span>
+              )}
+            </div>
+
+            <p className={`timer-readout${running ? ' is-running' : ''}`}>
+              {running ? elapsedText(running.started_at, now) : '0:00:00'}
+            </p>
+
+            {/* What you're doing is the thing you always fill in, so it gets the
+                whole width. The project is optional and sits underneath. */}
             <input
               type="text"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="1.5  ·  90m  ·  1h30"
+              className="quick-add-title"
+              value={running ? running.notes || notes : notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="what you're working on"
+              disabled={Boolean(running?.notes)}
             />
-            <button type="submit">Log time</button>
+
+            <div className="field-row timer-actions">
+              {running ? (
+                <button type="button" onClick={stopTimer}>
+                  End time
+                </button>
+              ) : (
+                <button type="button" onClick={startTimer}>
+                  Start time
+                </button>
+              )}
+              <label className="filter-toggle timer-project">
+                Project (optional)
+                <select
+                  className="inline-select"
+                  value={running ? running.project_id || '' : projectId}
+                  onChange={(e) => setProjectId(e.target.value)}
+                  disabled={Boolean(running)}
+                >
+                  <option value="">None</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <p className="list-row-sub">
+              {running
+                ? 'Ending it works out the minutes between start and end and files the session.'
+                : 'Start the clock, or switch to “Log a past session” to enter one by hand.'}
+            </p>
           </div>
-        </form>
-        <p className="list-row-sub">
-          Uses the note and project from the timer box above.
-        </p>
+        ) : (
+          <div className="past-panel">
+            <h2>Log a past session</h2>
+            <p className="list-row-sub">Everything for this session lives in this box.</p>
+
+            <form onSubmit={handleAddPast}>
+              <input
+                type="text"
+                value={pastNotes}
+                onChange={(e) => setPastNotes(e.target.value)}
+                placeholder="what you worked on"
+              />
+
+              <div className="field-row">
+                <label className="filter-toggle">
+                  Date
+                  <input
+                    type="date"
+                    className="inline-select"
+                    value={pastDate}
+                    onChange={(e) => setPastDate(e.target.value)}
+                  />
+                </label>
+                <input
+                  type="text"
+                  value={pastDuration}
+                  onChange={(e) => setPastDuration(e.target.value)}
+                  placeholder="1.5  ·  90m  ·  1h30"
+                />
+              </div>
+
+              <div className="field-row">
+                <select
+                  className="inline-select"
+                  value={pastProjectId}
+                  onChange={(e) => setPastProjectId(e.target.value)}
+                >
+                  <option value="">Project (optional)</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="inline-select"
+                  value={pastClientId}
+                  onChange={(e) => setPastClientId(e.target.value)}
+                >
+                  <option value="">Client (optional)</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field-row">
+                <label className="filter-toggle">
+                  <input
+                    type="checkbox"
+                    checked={pastBillable}
+                    onChange={(e) => setPastBillable(e.target.checked)}
+                  />
+                  Billable
+                </label>
+                <button type="submit">Log time</button>
+              </div>
+            </form>
+            <p className="list-row-sub">
+              A project fills in its client and rate automatically; set a client on its own for
+              work that isn&apos;t tied to a project.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -355,6 +457,7 @@ function TimeLog() {
               const rate = rateFor(entry)
               const value = rate && entry.billable ? (entry.minutes / 60) * Number(rate) : null
               const isRunning = entry.started_at && !entry.ended_at
+              const client = clientFor(entry.client_id || project?.client_id)
 
               return (
                 <li key={entry.id} className={`list-row${isRunning ? ' timer-live' : ''}`}>
@@ -372,6 +475,7 @@ function TimeLog() {
                       )}
                       <span>{isRunning ? elapsedText(entry.started_at, now) : formatHours(entry.minutes)}</span>
                       {project && <span>{project.name}</span>}
+                      {!project && client && <span>{client.name}</span>}
                       {entry.invoice_id && <span className="priority-pill">Invoiced</span>}
                       {!entry.billable && <span className="priority-pill">Non-billable</span>}
                     </span>

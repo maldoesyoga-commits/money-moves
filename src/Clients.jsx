@@ -1,22 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
-import TagPicker from './TagPicker'
 import EmptyState from './EmptyState'
 import { formatMoney } from './lib/format'
 import { BRANDS, BRAND_LABEL, formatHours } from './lib/freelance'
 import { report } from './lib/report'
 
-const STATUSES = [
-  { value: 'active', label: 'Active' },
-  { value: 'paused', label: 'Paused' },
-  { value: 'past', label: 'Past' },
-]
-
 function Clients() {
   const [clients, setClients] = useState([])
   const [stats, setStats] = useState({})
   const [showPast, setShowPast] = useState(false)
-  const [editingId, setEditingId] = useState(null)
 
   const [name, setName] = useState('')
   const [brand, setBrand] = useState('cm')
@@ -94,28 +87,6 @@ function Clients() {
     loadClients()
   }
 
-  async function updateClient(id, patch) {
-    setClients((prev) => prev.map((client) => (client.id === id ? { ...client, ...patch } : client)))
-
-    const { error } = await supabase.from('clients').update(patch).eq('id', id)
-
-    if (error) {
-      report('Failed to update client', error)
-      loadClients()
-    }
-  }
-
-  async function deleteClient(id) {
-    setClients((prev) => prev.filter((client) => client.id !== id))
-
-    const { error } = await supabase.from('clients').delete().eq('id', id)
-
-    if (error) {
-      report('Failed to delete client', error)
-      loadClients()
-    }
-  }
-
   const visible = clients.filter((client) => showPast || client.status !== 'past')
 
   return (
@@ -158,17 +129,16 @@ function Clients() {
       {visible.length === 0 ? (
         <EmptyState icon="🤝" title="No clients yet">
           Add whoever pays you — set their hourly rate here and time entries price
-          themselves. Brand tag keeps CM, HH and OM work apart.
+          themselves. Open a client to see their whole dashboard.
         </EmptyState>
       ) : (
         <ul className="list">
           {visible.map((client) => {
-            const editing = editingId === client.id
             const stat = stats[client.id] || { minutes: 0, outstanding: 0, paid: 0 }
 
             return (
               <li key={client.id} className="list-row project-row">
-                <div className="task-row-body">
+                <Link to={`/freelance/clients/${client.id}`} className="task-row-body client-card-link">
                   <span className={`brand-dot brand-${client.brand}`} />
                   <div className="list-row-main task-main">
                     <span className="list-row-title">{client.name}</span>
@@ -183,170 +153,8 @@ function Clients() {
                       )}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className="row-action-btn"
-                    onClick={() => setEditingId(editing ? null : client.id)}
-                  >
-                    {editing ? 'Close' : 'Edit'}
-                  </button>
-                </div>
-
-                {editing && (
-                  <div className="learning-detail">
-                    <div className="task-controls">
-                      <input
-                        type="text"
-                        className="inline-select"
-                        value={client.name}
-                        onChange={(e) => updateClient(client.id, { name: e.target.value })}
-                      />
-                      <select
-                        className="inline-select"
-                        value={client.brand}
-                        onChange={(e) => updateClient(client.id, { brand: e.target.value })}
-                      >
-                        {BRANDS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className="inline-select"
-                        value={client.status}
-                        onChange={(e) => updateClient(client.id, { status: e.target.value })}
-                      >
-                        {STATUSES.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="inline-select"
-                        value={client.rate || ''}
-                        placeholder="rate"
-                        onChange={(e) =>
-                          updateClient(client.id, { rate: e.target.value ? Number(e.target.value) : null })
-                        }
-                      />
-                      <button
-                        type="button"
-                        className="row-action-btn row-action-btn-danger"
-                        onClick={() => deleteClient(client.id)}
-                      >
-                        Delete
-                      </button>
-                      <TagPicker table="clients" id={client.id} />
-                    </div>
-                    <h4>Who they are</h4>
-                    <div className="field-row">
-                      <input
-                        type="text"
-                        value={client.contact_name || ''}
-                        placeholder="contact name"
-                        onChange={(e) =>
-                          updateClient(client.id, { contact_name: e.target.value || null })
-                        }
-                      />
-                      <input
-                        type="text"
-                        value={client.company || ''}
-                        placeholder="company / practice"
-                        onChange={(e) =>
-                          updateClient(client.id, { company: e.target.value || null })
-                        }
-                      />
-                    </div>
-
-                    <div className="field-row">
-                      <input
-                        type="email"
-                        value={client.email || ''}
-                        placeholder="email"
-                        onChange={(e) => updateClient(client.id, { email: e.target.value || null })}
-                      />
-                      <input
-                        type="tel"
-                        value={client.phone || ''}
-                        placeholder="phone"
-                        onChange={(e) => updateClient(client.id, { phone: e.target.value || null })}
-                      />
-                    </div>
-
-                    <h4>Billing</h4>
-                    <div className="field-row">
-                      <input
-                        type="email"
-                        value={client.billing_email || ''}
-                        placeholder="billing email (if different)"
-                        onChange={(e) =>
-                          updateClient(client.id, { billing_email: e.target.value || null })
-                        }
-                      />
-                      <input
-                        type="text"
-                        value={client.payment_terms || ''}
-                        placeholder="terms — e.g. net 14"
-                        onChange={(e) =>
-                          updateClient(client.id, { payment_terms: e.target.value || null })
-                        }
-                      />
-                    </div>
-
-                    <textarea
-                      rows="2"
-                      value={client.address || ''}
-                      placeholder="billing address — goes on the invoice"
-                      onChange={(e) => updateClient(client.id, { address: e.target.value || null })}
-                    />
-
-                    <h4>Background</h4>
-                    <div className="field-row">
-                      <input
-                        type="url"
-                        value={client.website || ''}
-                        placeholder="website"
-                        onChange={(e) =>
-                          updateClient(client.id, { website: e.target.value || null })
-                        }
-                      />
-                      <label className="filter-toggle">
-                        Working together since
-                        <input
-                          type="date"
-                          className="inline-select"
-                          value={client.started_on || ''}
-                          onChange={(e) =>
-                            updateClient(client.id, { started_on: e.target.value || null })
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <input
-                      type="text"
-                      value={client.how_we_met || ''}
-                      placeholder="how you came to work together"
-                      onChange={(e) =>
-                        updateClient(client.id, { how_we_met: e.target.value || null })
-                      }
-                    />
-
-                    <textarea
-                      rows="3"
-                      value={client.notes || ''}
-                      placeholder="notes — how they like to work, what to remember"
-                      onChange={(e) => updateClient(client.id, { notes: e.target.value || null })}
-                    />
-                    {stat.paid > 0 && (
-                      <p className="list-row-sub">{formatMoney(stat.paid)} paid to date.</p>
-                    )}
-                  </div>
-                )}
+                  <span className="row-action-btn">Open →</span>
+                </Link>
               </li>
             )
           })}
