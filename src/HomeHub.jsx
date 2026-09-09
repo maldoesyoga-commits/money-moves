@@ -223,7 +223,7 @@ function HomeHub() {
             day: 'numeric',
             month: 'long',
           })}
-          {cycle && week && week > 0 && ` · week ${week} of the ${cycle.title} cycle`}
+          {cycle && week > 0 ? ` · week ${week} of the ${cycle.title} cycle` : null}
         </p>
       </div>
 
