@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route, Navigate, Link } from 'react-router-dom'
+import { Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { report } from './lib/report'
 import { HomeIcon, SearchIcon } from './icons'
@@ -93,6 +93,7 @@ function App() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -182,6 +183,12 @@ function App() {
     <div className="app-shell">
       <div className="topbar">
         <div className="topbar-left">
+          <button type="button" className="icon-button" aria-label="Go back" onClick={() => navigate(-1)}>
+            ‹
+          </button>
+          <button type="button" className="icon-button" aria-label="Go forward" onClick={() => navigate(1)}>
+            ›
+          </button>
           <Link to="/" className="icon-button" aria-label="Back to hub">
             <HomeIcon className="bottom-nav-icon" />
           </Link>

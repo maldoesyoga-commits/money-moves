@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import TagPicker from './TagPicker'
 import NoteAttachments from './NoteAttachments'
+import RelatedPages from './RelatedPages'
 import { report } from './lib/report'
 
 const CATEGORIES = [
@@ -180,6 +181,8 @@ function NoteDetail() {
         </div>
 
         <NoteAttachments noteId={note.id} />
+
+        <RelatedPages noteId={note.id} />
       </div>
     </>
   )

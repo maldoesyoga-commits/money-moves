@@ -223,7 +223,7 @@ function Notebook() {
 
               <NoteAttachments noteId={open.id} />
 
-              <RelatedPages noteId={open.id} pages={notes} onOpen={setOpenId} />
+              <RelatedPages noteId={open.id} />
 
               <div className="page-foot">
                 <span className="list-row-sub">

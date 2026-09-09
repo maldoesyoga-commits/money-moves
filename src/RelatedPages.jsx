@@ -1,36 +1,50 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { report } from './lib/report'
 
-// Links between pages. A relation is stored once but shows on both pages, so
-// linking this page to another makes each show up under the other. `pages` is
-// the set you can link to (this notebook's pages); onOpen jumps to one.
-function RelatedPages({ noteId, pages, onOpen }) {
+// Links between notes, across the whole system. A relation is stored once but
+// shows on both notes, so linking A to B makes each show up under the other.
+// You can relate to any note, in any notebook (or none).
+function RelatedPages({ noteId }) {
   const [relations, setRelations] = useState([])
+  const [notes, setNotes] = useState([])
+  const [notebooks, setNotebooks] = useState([])
   const [pick, setPick] = useState('')
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('note_relations')
-      .select('*')
-      .or(`note_id.eq.${noteId},related_note_id.eq.${noteId}`)
+    const [{ data: rels, error: relError }, { data: noteRows }, { data: bookRows }] =
+      await Promise.all([
+        supabase
+          .from('note_relations')
+          .select('*')
+          .or(`note_id.eq.${noteId},related_note_id.eq.${noteId}`),
+        supabase.from('notes').select('id, title, notebook_id').order('title'),
+        supabase.from('notebooks').select('id, title'),
+      ])
 
-    if (error) {
-      report('Failed to load related pages — run supabase/note-relations.sql?', error)
+    if (relError) {
+      report('Failed to load related pages — run supabase/note-relations.sql?', relError)
       setRelations([])
       return
     }
 
-    setRelations(data || [])
+    setRelations(rels || [])
+    setNotes(noteRows || [])
+    setNotebooks(bookRows || [])
   }, [noteId])
 
   useEffect(() => {
     load()
   }, [load])
 
+  function bookName(id) {
+    return notebooks.find((b) => b.id === id)?.title || 'No notebook'
+  }
+
   const relatedIds = relations.map((r) => (r.note_id === noteId ? r.related_note_id : r.note_id))
-  const related = pages.filter((p) => relatedIds.includes(p.id))
-  const options = pages.filter((p) => p.id !== noteId && !relatedIds.includes(p.id))
+  const related = notes.filter((n) => relatedIds.includes(n.id))
+  const options = notes.filter((n) => n.id !== noteId && !relatedIds.includes(n.id))
 
   async function add(e) {
     e.preventDefault()
@@ -41,7 +55,7 @@ function RelatedPages({ noteId, pages, onOpen }) {
       .insert({ note_id: noteId, related_note_id: pick })
 
     if (error) {
-      report('Failed to link the page', error)
+      report('Failed to link the note', error)
       return
     }
 
@@ -49,18 +63,18 @@ function RelatedPages({ noteId, pages, onOpen }) {
     load()
   }
 
-  async function remove(pageId) {
+  async function remove(otherId) {
     const rows = relations.filter(
       (r) =>
-        (r.note_id === noteId && r.related_note_id === pageId) ||
-        (r.related_note_id === noteId && r.note_id === pageId),
+        (r.note_id === noteId && r.related_note_id === otherId) ||
+        (r.related_note_id === noteId && r.note_id === otherId),
     )
     setRelations((prev) => prev.filter((r) => !rows.some((x) => x.id === r.id)))
 
     for (const r of rows) {
       const { error } = await supabase.from('note_relations').delete().eq('id', r.id)
       if (error) {
-        report('Failed to unlink the page', error)
+        report('Failed to unlink the note', error)
         load()
         return
       }
@@ -73,33 +87,26 @@ function RelatedPages({ noteId, pages, onOpen }) {
       style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}
     >
       <div className="budget-row-header">
-        <span className="list-row-title">Related pages</span>
+        <span className="list-row-title">Related notes</span>
         {related.length > 0 && <span className="list-row-sub">{related.length}</span>}
       </div>
 
       {related.length > 0 && (
         <ul className="list">
-          {related.map((p) => (
-            <li key={p.id} className="list-row">
+          {related.map((n) => (
+            <li key={n.id} className="list-row">
               <div className="task-row-body">
-                <button
-                  type="button"
-                  className="list-row-main task-main"
-                  onClick={() => onOpen(p.id)}
-                  style={{
-                    textAlign: 'left',
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                  }}
+                <Link
+                  to={`/notes/note/${n.id}`}
+                  className="list-row-main task-main client-card-link"
                 >
-                  <span className="list-row-title project-link">{p.title || 'Untitled'} →</span>
-                </button>
+                  <span className="list-row-title project-link">{n.title || 'Untitled'} →</span>
+                  <span className="list-row-sub">{bookName(n.notebook_id)}</span>
+                </Link>
                 <button
                   type="button"
                   className="row-action-btn row-action-btn-danger"
-                  onClick={() => remove(p.id)}
+                  onClick={() => remove(n.id)}
                 >
                   Unlink
                 </button>
@@ -112,10 +119,10 @@ function RelatedPages({ noteId, pages, onOpen }) {
       {options.length > 0 ? (
         <form className="field-row" onSubmit={add}>
           <select className="inline-select" value={pick} onChange={(e) => setPick(e.target.value)}>
-            <option value="">Link another page…</option>
-            {options.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title || 'Untitled'}
+            <option value="">Link a note…</option>
+            {options.map((n) => (
+              <option key={n.id} value={n.id}>
+                {(n.title || 'Untitled') + ' — ' + bookName(n.notebook_id)}
               </option>
             ))}
           </select>
@@ -125,7 +132,7 @@ function RelatedPages({ noteId, pages, onOpen }) {
         </form>
       ) : (
         related.length === 0 && (
-          <p className="list-row-sub">Add more pages to this notebook to link them here.</p>
+          <p className="list-row-sub">No other notes yet to link to.</p>
         )
       )}
     </div>
