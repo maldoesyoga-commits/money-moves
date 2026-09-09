@@ -16,6 +16,7 @@ function GoalsPlan({ cycle, onCycleChange }) {
   const [projects, setProjects] = useState([])
   const [habits, setHabits] = useState([])
   const [openId, setOpenId] = useState(null)
+  const [openTactic, setOpenTactic] = useState(null)
 
   const [vision, setVision] = useState(cycle.vision || '')
   const [goalTitle, setGoalTitle] = useState('')
@@ -217,6 +218,22 @@ function GoalsPlan({ cycle, onCycleChange }) {
     }
   }
 
+  async function toggleTactic(tactic) {
+    const patch = {
+      done: !tactic.done,
+      done_at: tactic.done ? null : new Date().toISOString(),
+    }
+
+    setTactics((prev) => prev.map((row) => (row.id === tactic.id ? { ...row, ...patch } : row)))
+
+    const { error } = await supabase.from('twy_tactics').update(patch).eq('id', tactic.id)
+
+    if (error) {
+      report('Failed to update tactic', error)
+      load()
+    }
+  }
+
   async function deleteTactic(id) {
     setTactics((prev) => prev.filter((tactic) => tactic.id !== id))
 
@@ -319,6 +336,13 @@ function GoalsPlan({ cycle, onCycleChange }) {
     }
 
     onCycleChange?.()
+  }
+
+  // A textarea that grows to fit its content, so the full note is always visible.
+  function autoGrow(el) {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
   }
 
   function draftFor(goalId, key, fallback) {
@@ -580,50 +604,95 @@ function GoalsPlan({ cycle, onCycleChange }) {
               hint="Moments worth marking on the way to this goal. Objectives are what must be true; milestones are what you'll remember."
             />
 
-            <h3>Tactics</h3>
+            <h3>Tactics · lead measures</h3>
             <p className="list-row-sub">
-              The weekly actions. These are the only thing you score yourself on.
+              The weekly actions that drive the number above. These are the only thing you
+              score yourself on. Tick one off, or tap it to open the full detail and notes.
             </p>
 
             {goalTactics.length === 0 ? (
               <p className="empty-text">No tactics yet.</p>
             ) : (
               <ul className="list">
-                {goalTactics.map((tactic) => (
-                  <li key={tactic.id} className="list-row">
-                    <div className="list-row-main">
-                      <span className="list-row-title">{tactic.title}</span>
-                      <span className="list-row-sub">
-                        {tactic.cadence === 'weekly'
-                          ? `${tactic.times_per_week}× a week`
-                          : `once, week ${tactic.due_week}`}
-                      </span>
-                    </div>
-                    <div className="stage-nudge">
-                      {tactic.cadence === 'weekly' && (
-                        <input
-                          type="number"
-                          min="1"
-                          max="14"
-                          className="target-input"
-                          value={tactic.times_per_week}
-                          onChange={(e) =>
-                            updateTactic(tactic.id, {
-                              times_per_week: Math.max(1, Number(e.target.value) || 1),
-                            })
-                          }
-                        />
+                {goalTactics.map((tactic) => {
+                  const tacticOpen = openTactic === tactic.id
+                  return (
+                    <li
+                      key={tactic.id}
+                      className={`list-row task-row${tactic.done ? ' task-done' : ''}`}
+                    >
+                      <div className="task-row-body">
+                        <button
+                          type="button"
+                          className={`task-check${tactic.done ? ' checked' : ''}`}
+                          onClick={() => toggleTactic(tactic)}
+                          aria-label={tactic.done ? 'Reopen' : 'Mark done'}
+                        >
+                          {tactic.done ? '✓' : ''}
+                        </button>
+                        <button
+                          type="button"
+                          className="list-row-main task-main tactic-expand"
+                          onClick={() => setOpenTactic(tacticOpen ? null : tactic.id)}
+                          aria-expanded={tacticOpen}
+                        >
+                          <span className="list-row-title task-title">{tactic.title}</span>
+                          <span className="list-row-sub">
+                            {tactic.cadence === 'weekly'
+                              ? `${tactic.times_per_week}× a week`
+                              : `once, week ${tactic.due_week}`}
+                            {tactic.notes ? ' · note' : ''}
+                          </span>
+                        </button>
+                        <span className="tactic-caret" aria-hidden="true">
+                          {tacticOpen ? '▾' : '▸'}
+                        </span>
+                      </div>
+
+                      {tacticOpen && (
+                        <div className="tactic-detail">
+                          <textarea
+                            className="tactic-notes"
+                            rows="2"
+                            value={tactic.notes || ''}
+                            ref={autoGrow}
+                            onChange={(e) => {
+                              autoGrow(e.target)
+                              updateTactic(tactic.id, { notes: e.target.value || null })
+                            }}
+                            placeholder="notes — the full thing: what this looks like, why it matters, any detail"
+                          />
+                          <div className="stage-nudge">
+                            {tactic.cadence === 'weekly' && (
+                              <label className="tactic-times">
+                                <span className="list-row-sub">times a week</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="14"
+                                  className="target-input"
+                                  value={tactic.times_per_week}
+                                  onChange={(e) =>
+                                    updateTactic(tactic.id, {
+                                      times_per_week: Math.max(1, Number(e.target.value) || 1),
+                                    })
+                                  }
+                                />
+                              </label>
+                            )}
+                            <button
+                              type="button"
+                              className="row-action-btn row-action-btn-danger"
+                              onClick={() => deleteTactic(tactic.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
                       )}
-                      <button
-                        type="button"
-                        className="row-action-btn row-action-btn-danger"
-                        onClick={() => deleteTactic(tactic.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  )
+                })}
               </ul>
             )}
 

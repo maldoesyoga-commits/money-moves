@@ -5742,3 +5742,52 @@ a.dash-stat-link:hover {
   color: inherit;
   width: 100%;
 }
+
+/* ---------- Tactics: tick-off + expand ---------- */
+
+/* The tactic title acts as a button that opens its detail. */
+.tactic-expand {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.tactic-caret {
+  flex-shrink: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.tactic-detail {
+  margin: 8px 0 4px 34px; /* line up under the title, past the check circle */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tactic-notes {
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  min-height: 44px;
+}
+
+.tactic-times {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tactic-times .list-row-sub {
+  white-space: nowrap;
+}
+
+.tactic-detail .stage-nudge {
+  align-items: center;
+  justify-content: flex-start;
+}
